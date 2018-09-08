@@ -20,26 +20,24 @@ CREATE CACHED TABLE AUTHORS (
   initials      VARCHAR(2)   NOT NULL,
 );
 
--- This table will contain the cross reference between books and authors; i.e which authors are in a book, which books
--- were written by given author. We have a primary key on both id's (books and authors) which indexes both columns and
--- the first column, and additionally we add a separate index below for the second column
 CREATE CACHED TABLE BOOKS_AUTHORS (
   author_id INT NOT NULL,
   book_id   INT NOT NULL,
---   PRIMARY KEY (author_id, book_id),
   FOREIGN KEY (author_id) REFERENCES AUTHORS (id),
   FOREIGN KEY (book_id) REFERENCES BOOKS (id),
 );
 
--- CREATE INDEX IX_BOOKS_AUTHORS
---   ON BOOKS_AUTHORS (book_id);
-
--- select b.*
--- from books b, authors a, books_by_author ba
--- where a.name like '%stephen%king%'
--- and ba.author_id = a.id
--- and ba.book_id = b.id
--- order by b.year;
---
---
--- select * from BOOKS_BY_AUTHOR where book_id = 12345;
+-- THIS QUERY IS PROVIDED TO CHECK THE CROSS REFERENCE ONCE BOOKS ARE LOADED
+SELECT
+       B.id as BOOK_ID,
+       B.title as TITLE,
+       B.isbn as ISBN,
+       B.quantity as QUANTITY,
+       B.format as FORMAT,
+       A.name as AUTHOR_NAME,
+       A.id as AUTHOR_ID
+FROM BOOKS B
+INNER JOIN BOOKS_AUTHORS BA on b.id = BA.book_id
+INNER JOIN AUTHORS A on BA.author_id = A.id
+GROUP BY A.id
+ORDER BY B.ordering_title
