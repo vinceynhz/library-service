@@ -45,23 +45,42 @@
       <artifactId>spring-boot-starter-undertow</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-devtools</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-configuration-processor</artifactId>
+      <optional>true</optional>
+    </dependency>
+
     <!-- database -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
+
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
     </dependency>
 
-    <!--<dependency>-->
-      <!--<groupId>junit</groupId>-->
-      <!--<artifactId>junit</artifactId>-->
-      <!--<version>4.12</version>-->
-      <!--<scope>test</scope>-->
-    <!--</dependency>-->
+    <!-- JAXB/Jackson -->
+    <dependency>
+      <groupId>org.jvnet.jaxb2_commons</groupId>
+      <artifactId>jaxb2-basics</artifactId>
+      <version>0.12.0</version>
+    </dependency>
 
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-xml</artifactId>
+    </dependency>
+
+    <!-- test stuff -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>
@@ -102,7 +121,106 @@
         </plugin>
       </plugins>
     </pluginManagement>
+
     <plugins>
+      <plugin>
+        <groupId>org.jvnet.jaxb2.maven2</groupId>
+        <artifactId>maven-jaxb2-plugin</artifactId>
+        <version>0.14.0</version>
+        <configuration>
+          <extension>true</extension>
+          <args>
+            <arg>-XtoString</arg>
+            <arg>-Xfluent-api</arg>
+            <arg>-Xsimplify</arg>
+          </args>
+          <plugins>
+            <plugin>
+              <groupId>org.jvnet.jaxb2_commons</groupId>
+              <artifactId>jaxb2-basics</artifactId>
+              <version>0.12.0</version>
+            </plugin>
+            <plugin>
+              <groupId>net.java.dev.jaxb2-commons</groupId>
+              <artifactId>jaxb-fluent-api</artifactId>
+              <version>2.1.8</version>
+            </plugin>
+          </plugins>
+        </configuration>
+        <executions>
+          <execution>
+            <id>commons</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <schemaDirectory>src/main/resources/xsd</schemaDirectory>
+              <schemaIncludes>
+                <include>Commons.xsd</include>
+              </schemaIncludes>
+              <bindingIncludes>
+                <include>CommonsBindings.xml</include>
+              </bindingIncludes>
+              <generateDirectory>${project.build.directory}/generated-sources/model/commons</generateDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>response</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <schemaDirectory>src/main/resources/xsd</schemaDirectory>
+              <schemaIncludes>
+                <include>response/Responses.xsd</include>
+              </schemaIncludes>
+              <bindingIncludes>
+                <include>CommonsImportBindings.xml</include>
+              </bindingIncludes>
+              <generateDirectory>${project.build.directory}/generated-sources/model/response</generateDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>request</id>
+            <goals>
+              <goal>generate</goal>
+            </goals>
+            <configuration>
+              <schemaDirectory>src/main/resources/xsd</schemaDirectory>
+              <schemaIncludes>
+                <include>request/Requests.xsd</include>
+              </schemaIncludes>
+              <bindingIncludes>
+                <include>CommonsImportBindings.xml</include>
+              </bindingIncludes>
+              <generateDirectory>${project.build.directory}/generated-sources/model/request</generateDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>3.0.0</version>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${basedir}/target/generated-sources/model/commons</source>
+                <source>${basedir}/target/generated-sources/model/response</source>
+                <source>${basedir}/target/generated-sources/model/request</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
