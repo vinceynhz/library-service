@@ -6,11 +6,11 @@
   <jaxb:bindings schemaLocation="Commons.xsd">
 
     <jaxb:bindings node="//xs:complexType[@name='abstractBook']">
-      <jaxb:class ref="app.vyh.services.model.common.AbstractBook"/>
+      <jaxb:class ref="app.tandv.services.model.common.AbstractBook"/>
     </jaxb:bindings>
 
     <jaxb:bindings node="//xs:simpleType[@name='formatTypeEnum']">
-      <jaxb:typesafeEnumClass ref="app.vyh.services.model.common.FormatTypeEnum"/>
+      <jaxb:typesafeEnumClass ref="app.tandv.services.model.common.FormatTypeEnum"/>
     </jaxb:bindings>
 
   </jaxb:bindings>

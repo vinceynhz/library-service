@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-           xmlns:csd="http://model.services.vyh.app/common"
-           xmlns:rsp="http://model.services.vyh.app/response"
-           targetNamespace="http://model.services.vyh.app/response"
+           xmlns:csd="http://model.services.tandv.app/common"
+           xmlns:rsp="http://model.services.tandv.app/response"
+           targetNamespace="http://model.services.tandv.app/response"
            elementFormDefault="qualified" attributeFormDefault="qualified">
 
-  <xs:import namespace="http://model.services.vyh.app/common" schemaLocation="../Commons.xsd"/>
+  <xs:import namespace="http://model.services.tandv.app/common" schemaLocation="../Commons.xsd"/>
 
   <xs:element name="libraryResponse">
     <xs:complexType>

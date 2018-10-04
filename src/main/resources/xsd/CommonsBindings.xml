@@ -6,8 +6,8 @@
 
   <jaxb:bindings schemaLocation="Commons.xsd">
     <jaxb:bindings node="//xs:element[@type='csd:formatType']">
-      <xjc:javaType name="app.vyh.services.data.entity.BookFormat"
-                    adapter="app.vyh.services.model.binding.BookFormatAdapter"/>
+      <xjc:javaType name="app.tandv.services.data.entity.BookFormat"
+                    adapter="app.tandv.services.model.binding.BookFormatAdapter"/>
     </jaxb:bindings>
   </jaxb:bindings>
 </jaxb:bindings>

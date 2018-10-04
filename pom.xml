@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>app.vyh.services</groupId>
+  <groupId>app.tandv.services</groupId>
   <artifactId>library-service</artifactId>
   <version>1.0.0-SNAPSHOT</version>
 
@@ -26,6 +26,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
+    <timestamp>${maven.build.timestamp}</timestamp>
+    <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
+    <a>${project.version}</a>
   </properties>
 
   <dependencies>
@@ -55,6 +58,17 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-configuration-processor</artifactId>
       <optional>true</optional>
+    </dependency>
+
+    <!-- aop -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-aop</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.aspectj</groupId>
+      <artifactId>aspectjrt</artifactId>
     </dependency>
 
     <!-- database -->
@@ -102,6 +116,21 @@
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.7.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.springframework.boot</groupId>
+          <artifactId>spring-boot-maven-plugin</artifactId>
+          <dependencies>
+            <dependency>
+              <groupId>org.aspectj</groupId>
+              <artifactId>aspectjweaver</artifactId>
+              <version>${aspectj.version}</version>
+            </dependency>
+          </dependencies>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>aspectj-maven-plugin</artifactId>
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
@@ -225,6 +254,47 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
       </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>aspectj-maven-plugin</artifactId>
+        <version>1.10</version>
+        <configuration>
+          <source>${java.version}</source>
+          <target>${java.version}</target>
+          <complianceLevel>${java.version}</complianceLevel>
+          <proc>none</proc>
+          <showWeaveInfo>true</showWeaveInfo>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+        </executions>
+        <dependencies>
+          <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjtools</artifactId>
+            <version>${aspectj.version}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
     </plugins>
+
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+        <filtering>true</filtering>
+      </resource>
+    </resources>
+
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+        <filtering>true</filtering>
+      </testResource>
+    </testResources>
   </build>
 </project>

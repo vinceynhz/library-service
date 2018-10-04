@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
-           xmlns:csd="http://model.services.vyh.app/common"
-           xmlns:rqs="http://model.services.vyh.app/request/book"
-           targetNamespace="http://model.services.vyh.app/request/book"
+           xmlns:csd="http://model.services.tandv.app/common"
+           xmlns:rqs="http://model.services.tandv.app/request/book"
+           targetNamespace="http://model.services.tandv.app/request/book"
            elementFormDefault="qualified" attributeFormDefault="qualified">
 
-  <xs:import namespace="http://model.services.vyh.app/common" schemaLocation="../Commons.xsd"/>
+  <xs:import namespace="http://model.services.tandv.app/common" schemaLocation="../Commons.xsd"/>
 
   <xs:element name="addBookRequest">
     <xs:complexType>
@@ -19,11 +19,19 @@
     </xs:complexType>
   </xs:element>
 
-  <xs:element name="updateBookRequest">
+  <xs:element name="updateBookQuantityRequest">
     <xs:complexType>
       <xs:sequence>
         <xs:element name="quantity" type="xs:unsignedInt"/>
         <xs:element name="action" type="rqs:updateQtyActionEnum"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+
+  <xs:element name="updateBookTitleRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="title" type="xs:string"/>
       </xs:sequence>
     </xs:complexType>
   </xs:element>
