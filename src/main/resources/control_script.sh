@@ -9,8 +9,8 @@ APP_BUILD_TIMESTAMP="@timestamp@"
 LOG_FOLDER=/var/log/app.services
 RUN_FOLDER=/var/run/app.services
 
-PID_FILE=${LOG_FOLDER}/${APP_NAME}.pid
-LOG_FILE=${RUN_FOLDER}/${APP_NAME}.log
+PID_FILE=${RUN_FOLDER}/${APP_NAME}.pid
+LOG_FILE=${LOG_FOLDER}/${APP_NAME}.log
 
 # Deployment variables
 GIT_REPO_URL=https://github.com/vinceynhz/library-service.git
@@ -19,8 +19,8 @@ APP_HOME=/opt/library-service
 
 # And these ones are app execution specific
 APP_JAR_PATH=${APP_HOME}/${APP_NAME}-${APP_VERSION}.jar
-APP_LOG_FILE=${RUN_FOLDER}/${APP_NAME}.out
-APP_ERR_FILE=${RUN_FOLDER}/${APP_NAME}.err
+APP_LOG_FILE=${LOG_FOLDER}/${APP_NAME}.out
+APP_ERR_FILE=${LOG_FOLDER}/${APP_NAME}.err
 
 JVM_OPTS="-Xms256M -Xmx1024M"
 DATE=$(date +%F\ %T)
@@ -43,8 +43,13 @@ _log(){
     echo "${DATE} - ${MESSAGE}" >> ${LOG_FILE}
 }
 
+_console(){
+    MESSAGE=$1
+    echo "${DATE} - ${MESSAGE}"
+}
+
 _clone_repo(){
-    # This will clone the repository
+    _console "Cloning repository"
     pushd_s ~
     git clone ${GIT_REPO_URL} 1>>${LOG_FILE} 2>&1
     rc=$?
@@ -53,7 +58,7 @@ _clone_repo(){
 }
 
 _update_repo(){
-    # This one will go to the installation folder
+    _console "Updating repository"
     pushd_s ${INSTALL_PATH}
     # and pull from github
     git pull --all 1>>${LOG_FILE} 2>&1
@@ -65,59 +70,50 @@ _update_repo(){
 install(){
     # First we check if the installation folder exists or not
     if [ ! -d ${INSTALL_PATH} ]; then
-        _log "Installation folder doesn't exist. ${INSTALL_PATH}"
-        _log "Cloning repository"
+        _console "Installation folder doesn't exist. ${INSTALL_PATH}"
         _clone_repo
     else
-        # Here we will just update the repo
         _update_repo
     fi
     if [ $? -ne 0 ]; then
-        _log "Failed getting repo information"
+        _console "Failed getting repo information"
         return 1
     fi
 
     # Build the new jar
-    _log "Building ${APP_NAME}"
-    python3 ${INSTALL_PATH}/bin/build.py
-
+    timestamp=$(date +%Y%m%d_%H%M%S)
+    _console "Building ${APP_NAME}"
+    python3 ${INSTALL_PATH}/bin/build.py &>"/tmp/library-service-build-${timestamp}.log"
+    _console "Build output saved in /tmp/library-service-build-${timestamp}.log"
     if [ $? -ne 0 ]; then
-        _log "Build failed"
+        _console "Build failed"
         return 2
     fi
 
     # We get the new app's name (in case it has changed)
     app_name=$(python3 ${INSTALL_PATH}/bin/jarname.py name)
     if [ $? -ne 0 ]; then
-        _log "Unable to read app name"
+        _console "Unable to read app name"
         return 2
-    fi
-    app_home=/opt/${app_name}
-    if [ ! -d  ${app_home} ]; then
-        _log "New APP_HOME is ${app_home}"
-        mkdir ${app_home}
-        if [ $? -ne 0 ]; then
-            _log "Unable to create new APP_HOME: ${app_home}"
-            return 3
-        fi
     fi
 
     # We need to copy the new jar and the new control file
     jar_name=$(python3 ${INSTALL_PATH}/bin/jarname.py)
     if [ $? -ne 0 ]; then
-        _log "Unable to read jar name"
+        _console "Unable to read jar name"
         return 2
     fi
-    cp ${INSTALL_PATH}/target/${jar_name} ${app_home}
+    cp ${INSTALL_PATH}/target/${jar_name} ${APP_HOME}
     if [ $? -ne 0 ]; then
-        _log "Unable to copy jar file into ${app_home}"
+        _console "Unable to copy jar file into ${APP_HOME}"
         return 4
     fi
-    cp ${INSTALL_PATH}/target/classes/control_script.sh ${app_home}
+    cp ${INSTALL_PATH}/target/classes/control_script.sh ${APP_HOME}
     if [ $? -ne 0 ]; then
-        _log "Unable to copy new control_script into ${app_home}"
+        _console "Unable to copy new control_script into ${APP_HOME}"
         return 4
     fi
+    chmod 750 ${APP_HOME}/control_script.sh
     # This will stop current execution
     stop
     # After the install is complete, it's expected that whoever issued it, also calls start to run the new version
@@ -127,7 +123,7 @@ install(){
 
 start(){
     if [ -f ${PID_FILE} ]; then
-        echo "${APP_NAME} is still running"
+        _console "${APP_NAME} is still running"
         return 1
     fi
 
@@ -143,7 +139,7 @@ start(){
 
 stop(){
     if [ ! -f ${PID_FILE} ]; then
-        echo "${APP_NAME} is not running"
+        _console "${APP_NAME} is not running"
         return 1
     fi
     PID=$(cat ${PID_FILE})
@@ -161,11 +157,11 @@ restart(){
 
 status(){
     if [ ! -f ${PID_FILE} ]; then
-        echo "${APP_NAME} is not running"
+        _console "${APP_NAME} is not running"
         return 1
     fi
     PID=$(cat ${PID_FILE})
-    echo "${APP_NAME} running with pid ${PID}"
+    _console "${APP_NAME} running with pid ${PID}"
     return 0
 }
 
