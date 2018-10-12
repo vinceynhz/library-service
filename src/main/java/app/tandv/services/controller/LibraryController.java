@@ -37,7 +37,7 @@ public class LibraryController {
     /**
      * To retrieve the collection of books
      *
-     * @return {@code 200 - OK} and the books, {@code 204 - NO CONTENT} if no books are defined
+     * @return {@code 200 - OK} and the books (or empty object if the db is empty)
      * @throws LibraryOperationException {@code 500 - INTERNAL SERVER ERROR} if failed to retrieve the books
      */
     @GetMapping(path = "/books")

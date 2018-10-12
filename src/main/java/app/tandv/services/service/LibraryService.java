@@ -54,7 +54,7 @@ public class LibraryService {
         if (allEntities.isPresent()) {
             response.setContent(allEntities.get());
         } else {
-            finalStatus = HttpStatus.NO_CONTENT;
+            response.setContent(Collections.EMPTY_MAP);
         }
 
         return response.withHttpStatusCode(finalStatus.value())
@@ -331,7 +331,7 @@ public class LibraryService {
         if (allEntities.isPresent()) {
             response.setContent(allEntities.get());
         } else {
-            finalStatus = HttpStatus.NO_CONTENT;
+            response.setContent(Collections.EMPTY_MAP);
         }
 
         return response.withHttpStatusCode(finalStatus.value())
