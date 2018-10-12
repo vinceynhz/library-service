@@ -144,8 +144,8 @@ stop(){
     fi
     PID=$(cat ${PID_FILE})
     _log "Stopping ${APP_NAME} with pid ${PID}"
-    sudo kill -TERM ${PID}
-    sudo rm ${PID_FILE}
+    kill -TERM ${PID}
+    rm ${PID_FILE}
     _log "${APP_NAME} stopped"
     return 0
 }
