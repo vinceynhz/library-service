@@ -10,7 +10,7 @@ import org.junit.Test;
 public class EntityUtilsTest {
     @Test
     public void testHashOfAll() {
-        int output = -735122101;
+        int output = 1743391056;
         int input = EntityUtils.entityHash(
                 null,
                 Boolean.FALSE,
