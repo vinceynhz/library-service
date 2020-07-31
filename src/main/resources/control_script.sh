@@ -22,7 +22,7 @@ APP_JAR_PATH=${APP_HOME}/${APP_NAME}-${APP_VERSION}.jar
 APP_LOG_FILE=${LOG_FOLDER}/${APP_NAME}.out
 APP_ERR_FILE=${LOG_FOLDER}/${APP_NAME}.err
 
-JVM_OPTS="-Xms256M -Xmx1024M"
+JVM_OPTS="-Xms256M -Xmx1024M -DLOG_DIR=${APP_HOME}"
 DATE=$(date +%F\ %T)
 
 if [ ! -f ${LOG_FILE} ]; then
@@ -82,7 +82,7 @@ install(){
 
     # Build the new jar
     timestamp=$(date +%Y%m%d_%H%M%S)
-    _console "Building ${APP_NAME}"
+    _console "Building library service"
     python3 ${INSTALL_PATH}/bin/build.py &>"/tmp/library-service-build-${timestamp}.log"
     _console "Build output saved in /tmp/library-service-build-${timestamp}.log"
     if [ $? -ne 0 ]; then

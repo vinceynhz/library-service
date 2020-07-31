@@ -4,8 +4,8 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 /**
- * @author Vic on 8/28/2018
- **/
+ * @author vic on 2018-08-28
+ */
 public final class StringUtils {
     private static final Set<String> ARTICLES = new HashSet<>(Arrays.asList("a", "an", "of", "the", "is", "in", "to"));
     private static final Set<String> TITLE_ARTICLES = new HashSet<>(Arrays.asList("a", "an", "the"));

@@ -1,8 +1,8 @@
 package app.tandv.services.util;
 
 /**
- * @author Vic on 8/31/2018
- **/
+ * @author vic on 2018-08-31
+ */
 public final class EntityUtils {
     private EntityUtils() {
     }

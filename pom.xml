@@ -16,88 +16,108 @@
     <developerConnection>scm:git:https://github.com/vinceynhz/library-service</developerConnection>
   </scm>
 
-  <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>2.0.4.RELEASE</version>
-  </parent>
-
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-    <timestamp>${maven.build.timestamp}</timestamp>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
-    <a>${project.version}</a>
+    <timestamp>${maven.build.timestamp}</timestamp>
+
+    <version.awaitility>4.0.3</version.awaitility>
+    <version.h2>1.4.200</version.h2>
+    <version.hibernate>5.4.0.Final</version.hibernate>
+    <version.hikari>3.4.5</version.hikari>
+    <version.junit.jupiter>5.6.2</version.junit.jupiter>
+    <version.junit.platform>1.6.2</version.junit.platform>
+    <version.logback>1.2.3</version.logback>
+    <version.slf4j>1.7.25</version.slf4j>
+    <version.vertx>3.9.1</version.vertx>
   </properties>
 
   <dependencies>
+    <!-- vert.x -->
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-web</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-starter-tomcat</artifactId>
-        </exclusion>
-      </exclusions>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-core</artifactId>
+      <version>${version.vertx}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-undertow</artifactId>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-rx-java2</artifactId>
+      <version>${version.vertx}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-devtools</artifactId>
-      <scope>runtime</scope>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-config</artifactId>
+      <version>${version.vertx}</version>
     </dependency>
 
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-configuration-processor</artifactId>
-      <optional>true</optional>
+      <groupId>io.vertx</groupId>
+      <artifactId>vertx-web</artifactId>
+      <version>${version.vertx}</version>
     </dependency>
 
-    <!-- aop -->
+    <!-- data -->
     <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-aop</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.aspectj</groupId>
-      <artifactId>aspectjrt</artifactId>
-    </dependency>
-
-    <!-- database -->
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-data-jpa</artifactId>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-core</artifactId>
+      <version>${version.hibernate}</version>
     </dependency>
 
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
-    </dependency>
-
-    <!-- JAXB/Jackson -->
-    <dependency>
-      <groupId>org.jvnet.jaxb2_commons</groupId>
-      <artifactId>jaxb2-basics</artifactId>
-      <version>0.12.0</version>
+      <version>${version.h2}</version>
     </dependency>
 
     <dependency>
-      <groupId>com.fasterxml.jackson.dataformat</groupId>
-      <artifactId>jackson-dataformat-xml</artifactId>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+      <version>${version.hikari}</version>
     </dependency>
 
-    <!-- test stuff -->
+    <!-- logging -->
     <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${version.slf4j}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${version.logback}</version>
+    </dependency>
+
+    <!-- test -->
+    <dependency>
+      <groupId>io.rest-assured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <version>4.3.1</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>${version.awaitility}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${version.junit.jupiter}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-runner</artifactId>
+      <version>${version.junit.platform}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -116,21 +136,6 @@
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
           <version>3.7.0</version>
-        </plugin>
-        <plugin>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-maven-plugin</artifactId>
-          <dependencies>
-            <dependency>
-              <groupId>org.aspectj</groupId>
-              <artifactId>aspectjweaver</artifactId>
-              <version>${aspectj.version}</version>
-            </dependency>
-          </dependencies>
-        </plugin>
-        <plugin>
-          <groupId>org.codehaus.mojo</groupId>
-          <artifactId>aspectj-maven-plugin</artifactId>
         </plugin>
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
@@ -152,135 +157,7 @@
     </pluginManagement>
 
     <plugins>
-      <plugin>
-        <groupId>org.jvnet.jaxb2.maven2</groupId>
-        <artifactId>maven-jaxb2-plugin</artifactId>
-        <version>0.14.0</version>
-        <configuration>
-          <extension>true</extension>
-          <args>
-            <arg>-XtoString</arg>
-            <arg>-Xfluent-api</arg>
-            <arg>-Xsimplify</arg>
-          </args>
-          <plugins>
-            <plugin>
-              <groupId>org.jvnet.jaxb2_commons</groupId>
-              <artifactId>jaxb2-basics</artifactId>
-              <version>0.12.0</version>
-            </plugin>
-            <plugin>
-              <groupId>net.java.dev.jaxb2-commons</groupId>
-              <artifactId>jaxb-fluent-api</artifactId>
-              <version>2.1.8</version>
-            </plugin>
-          </plugins>
-        </configuration>
-        <executions>
-          <execution>
-            <id>commons</id>
-            <goals>
-              <goal>generate</goal>
-            </goals>
-            <configuration>
-              <schemaDirectory>src/main/resources/xsd</schemaDirectory>
-              <schemaIncludes>
-                <include>Commons.xsd</include>
-              </schemaIncludes>
-              <bindingIncludes>
-                <include>CommonsBindings.xml</include>
-              </bindingIncludes>
-              <generateDirectory>${project.build.directory}/generated-sources/model/commons</generateDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>response</id>
-            <goals>
-              <goal>generate</goal>
-            </goals>
-            <configuration>
-              <schemaDirectory>src/main/resources/xsd</schemaDirectory>
-              <schemaIncludes>
-                <include>response/Responses.xsd</include>
-              </schemaIncludes>
-              <bindingIncludes>
-                <include>CommonsImportBindings.xml</include>
-              </bindingIncludes>
-              <generateDirectory>${project.build.directory}/generated-sources/model/response</generateDirectory>
-            </configuration>
-          </execution>
-          <execution>
-            <id>request</id>
-            <goals>
-              <goal>generate</goal>
-            </goals>
-            <configuration>
-              <schemaDirectory>src/main/resources/xsd</schemaDirectory>
-              <schemaIncludes>
-                <include>request/Requests.xsd</include>
-              </schemaIncludes>
-              <bindingIncludes>
-                <include>CommonsImportBindings.xml</include>
-              </bindingIncludes>
-              <generateDirectory>${project.build.directory}/generated-sources/model/request</generateDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
 
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <version>3.0.0</version>
-        <executions>
-          <execution>
-            <id>add-source</id>
-            <phase>generate-sources</phase>
-            <goals>
-              <goal>add-source</goal>
-            </goals>
-            <configuration>
-              <sources>
-                <source>${basedir}/target/generated-sources/model/commons</source>
-                <source>${basedir}/target/generated-sources/model/response</source>
-                <source>${basedir}/target/generated-sources/model/request</source>
-              </sources>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-maven-plugin</artifactId>
-      </plugin>
-
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>aspectj-maven-plugin</artifactId>
-        <version>1.10</version>
-        <configuration>
-          <source>${java.version}</source>
-          <target>${java.version}</target>
-          <complianceLevel>${java.version}</complianceLevel>
-          <proc>none</proc>
-          <showWeaveInfo>true</showWeaveInfo>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>compile</goal>
-            </goals>
-          </execution>
-        </executions>
-        <dependencies>
-          <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjtools</artifactId>
-            <version>${aspectj.version}</version>
-          </dependency>
-        </dependencies>
-      </plugin>
     </plugins>
 
     <resources>
