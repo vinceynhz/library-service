@@ -1,14 +1,15 @@
 package app.tandv.services.data.repository;
 
 import app.tandv.services.data.entity.AuthorEntity;
+import io.vertx.reactivex.core.Vertx;
 
-import java.util.List;
+import javax.persistence.EntityManager;
 
 /**
- * @author Vic on 9/1/2018
- **/
-public interface AuthorsRepository extends AbstractEntityRepository<AuthorEntity> {
-    List<AuthorEntity> findByName(String name);
-
-    List<AuthorEntity> findByNameContaining(String nameLike);
+ * @author vic on 2018-09-01
+ */
+public class AuthorsRepository extends LibraryRepository<AuthorEntity> {
+    public AuthorsRepository(Vertx vertx, EntityManager entityManager) {
+        super(AuthorEntity.class, vertx, entityManager);
+    }
 }

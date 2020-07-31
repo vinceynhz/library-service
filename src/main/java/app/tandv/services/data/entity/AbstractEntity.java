@@ -1,23 +1,32 @@
 package app.tandv.services.data.entity;
 
+import io.vertx.core.json.JsonObject;
+
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.MappedSuperclass;
 
 /**
- * @author Vic on 9/26/2018
- **/
+ * Any implementing class should meet the following criteria:
+ * - Provide JPA named queries findAll and findAllById
+ *
+ * @author vic on 2018-09-26
+ */
+@SuppressWarnings("unused")
 @MappedSuperclass
 public abstract class AbstractEntity {
     @Id
-    protected Integer id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    Long id;
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public abstract Object toResponse();
+    public abstract JsonObject toJson();
 }

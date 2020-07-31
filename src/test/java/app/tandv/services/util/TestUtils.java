@@ -2,7 +2,7 @@ package app.tandv.services.util;
 
 import org.junit.Assert;
 
-import java.util.List;
+import java.util.*;
 
 /**
  * @author Vic on 9/7/2018
@@ -11,7 +11,7 @@ public final class TestUtils {
     private TestUtils() {
     }
 
-    public static void assertList(List target, int expectedSize){
+    public static void assertList(List target, int expectedSize) {
         Assert.assertNotNull(target);
         Assert.assertFalse(target.isEmpty());
         Assert.assertEquals(expectedSize, target.size());

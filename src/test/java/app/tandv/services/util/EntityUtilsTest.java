@@ -23,7 +23,7 @@ public class EntityUtilsTest {
                 52.8f,
                 (double) (24 / 7),
                 "A string",
-                BookFormat.PB,
+                BookFormat.PAPERBACK,
                 new Exception("some object")
         );
         Assert.assertEquals(output, input);
