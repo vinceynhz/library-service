@@ -1,6 +1,6 @@
 package app.tandv.services.util;
 
-import org.junit.Assert;
+import org.junit.jupiter.api.Assertions;
 
 import java.util.*;
 
@@ -12,8 +12,8 @@ public final class TestUtils {
     }
 
     public static void assertList(List target, int expectedSize) {
-        Assert.assertNotNull(target);
-        Assert.assertFalse(target.isEmpty());
-        Assert.assertEquals(expectedSize, target.size());
+        Assertions.assertNotNull(target);
+        Assertions.assertFalse(target.isEmpty());
+        Assertions.assertEquals(expectedSize, target.size());
     }
 }

@@ -10,7 +10,6 @@ import io.restassured.RestAssured;
 import io.restassured.specification.RequestSpecification;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import org.junit.Assert;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.slf4j.Logger;
@@ -141,7 +140,7 @@ class AppTest {
         books.get(3).getJsonArray(EventConfig.AUTHORS).add(authorIds.get(3));
         books.get(4).getJsonArray(EventConfig.AUTHORS).add(authorIds.get(2)).add(authorIds.get(3));
 
-        books.forEach(book -> Assert.assertFalse(book.getJsonArray(EventConfig.AUTHORS).isEmpty()));
+        books.forEach(book -> Assertions.assertFalse(book.getJsonArray(EventConfig.AUTHORS).isEmpty()));
     }
 
     @Test
@@ -259,8 +258,8 @@ class AppTest {
     private static void matchWithBook(JsonObject author) {
         LOGGER.debug("Matching author:\n{}", author.encodePrettily());
 
-        Assert.assertTrue(author.containsKey(EventConfig.BOOKS));
-        Assert.assertFalse(author.getJsonArray(EventConfig.BOOKS).isEmpty());
+        Assertions.assertTrue(author.containsKey(EventConfig.BOOKS));
+        Assertions.assertFalse(author.getJsonArray(EventConfig.BOOKS).isEmpty());
 
         // from the DB
         int authorId = author.getInteger(EventConfig.ID);
@@ -280,17 +279,17 @@ class AppTest {
                 .map(book -> book.getJsonArray(EventConfig.AUTHORS))
                 .map(authorsInBook -> authorsInBook.contains(authorId))
                 .filter(aBoolean -> {
-                    Assert.assertTrue(aBoolean);
+                    Assertions.assertTrue(aBoolean);
                     return aBoolean;
                 })
                 .count()
                 .subscribe(
-                        validBooks -> Assert.assertEquals((long) validBooks, authorBooks.size()),
+                        validBooks -> Assertions.assertEquals((long) validBooks, authorBooks.size()),
                         error -> {
                             LOGGER.error("Error matching author books", error);
                             LOGGER.error(author.encodePrettily());
                             books.stream().map(JsonObject::encode).forEach(LOGGER::error);
-                            Assert.fail();
+                            Assertions.fail();
                         }
                 );
         toDispose.dispose();

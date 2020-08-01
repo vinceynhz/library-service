@@ -14,11 +14,11 @@ LOG_FILE=${LOG_FOLDER}/${APP_NAME}.log
 
 # Deployment variables
 GIT_REPO_URL=https://github.com/vinceynhz/library-service.git
-INSTALL_PATH=~/library-service
+INSTALL_PATH=/tmp/library-service
 APP_HOME=/opt/library-service
 
 # And these ones are app execution specific
-APP_JAR_PATH=${APP_HOME}/${APP_NAME}-${APP_VERSION}.jar
+APP_JAR_PATH=${APP_HOME}/${APP_NAME}.jar
 APP_LOG_FILE=${LOG_FOLDER}/${APP_NAME}.out
 APP_ERR_FILE=${LOG_FOLDER}/${APP_NAME}.err
 
@@ -50,7 +50,7 @@ _console(){
 
 _clone_repo(){
     _console "Cloning repository"
-    pushd_s ~
+    pushd_s /tmp/
     git clone ${GIT_REPO_URL} 1>>${LOG_FILE} 2>&1
     rc=$?
     popd_s
@@ -98,7 +98,7 @@ install(){
     fi
 
     # We need to copy the new jar and the new control file
-    jar_name=$(python3 ${INSTALL_PATH}/bin/jarname.py)
+    jar_name=$(python3 ${INSTALL_PATH}/bin/jarname.py jar)
     if [ $? -ne 0 ]; then
         _console "Unable to read jar name"
         return 2
