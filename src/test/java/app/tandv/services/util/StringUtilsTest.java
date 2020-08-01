@@ -1,51 +1,51 @@
 package app.tandv.services.util;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 /**
  * @author Vic on 8/28/2018
  **/
-public class StringUtilsTest {
+class StringUtilsTest {
 
     @Test
-    public void testCapitalize() {
-        Assert.assertEquals("Abc", StringUtils.capitalize("abc", false));
-        Assert.assertEquals("'Salem's", StringUtils.capitalize("'Salem's", false));
-        Assert.assertEquals("UofA", StringUtils.capitalize("UofA", false));
-        Assert.assertEquals("the", StringUtils.capitalize("the", false));
-        Assert.assertEquals("The", StringUtils.capitalize("the", true));
+    void testCapitalize() {
+        Assertions.assertEquals("Abc", StringUtils.capitalize("abc", false));
+        Assertions.assertEquals("'Salem's", StringUtils.capitalize("'Salem's", false));
+        Assertions.assertEquals("UofA", StringUtils.capitalize("UofA", false));
+        Assertions.assertEquals("the", StringUtils.capitalize("the", false));
+        Assertions.assertEquals("The", StringUtils.capitalize("the", true));
     }
 
     @Test
-    public void testTitleCase() {
-        Assert.assertEquals("It", StringUtils.titleCase("it"));
-        Assert.assertEquals("And Then There Were None", StringUtils.titleCase("and then tHere Were nonE"));
-        Assert.assertEquals("Of the Mice of Green", StringUtils.titleCase("Of The Mice Of Green"));
-        Assert.assertEquals("ANNE OF THE GREEN GABLES", StringUtils.titleCase("ANNE OF THE GREEN GABLES"));
+    void testTitleCase() {
+        Assertions.assertEquals("It", StringUtils.titleCase("it"));
+        Assertions.assertEquals("And Then There Were None", StringUtils.titleCase("and then tHere Were nonE"));
+        Assertions.assertEquals("Of the Mice of Green", StringUtils.titleCase("Of The Mice Of Green"));
+        Assertions.assertEquals("ANNE OF THE GREEN GABLES", StringUtils.titleCase("ANNE OF THE GREEN GABLES"));
     }
 
     @Test
-    public void testTitleOrdering() {
-        Assert.assertEquals("salems lot", StringUtils.titleForOrdering("'Salem's Lot"));
-        Assert.assertEquals("starry night", StringUtils.titleForOrdering("A Starry Night"));
-        Assert.assertEquals("unfortunate case", StringUtils.titleForOrdering("An unfortunate Case"));
-        Assert.assertEquals("gunslinger", StringUtils.titleForOrdering("The gunslinger"));
+    void testTitleOrdering() {
+        Assertions.assertEquals("salems lot", StringUtils.titleForOrdering("'Salem's Lot"));
+        Assertions.assertEquals("starry night", StringUtils.titleForOrdering("A Starry Night"));
+        Assertions.assertEquals("unfortunate case", StringUtils.titleForOrdering("An unfortunate Case"));
+        Assertions.assertEquals("gunslinger", StringUtils.titleForOrdering("The gunslinger"));
     }
 
     @Test
-    public void testAuthorOrdering() {
+    void testAuthorOrdering() {
         String[] result;
         result = StringUtils.authorForOrdering("Sir Isaac Newton");
-        Assert.assertNotNull(result);
-        Assert.assertEquals(2, result.length);
-        Assert.assertEquals("newton isaac", result[0]);
-        Assert.assertEquals("IN", result[1]);
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(2, result.length);
+        Assertions.assertEquals("newton isaac", result[0]);
+        Assertions.assertEquals("IN", result[1]);
 
         result = StringUtils.authorForOrdering("Vic Yanez III");
-        Assert.assertNotNull(result);
-        Assert.assertEquals(2, result.length);
-        Assert.assertEquals("yanez vic", result[0]);
-        Assert.assertEquals("VY", result[1]);
+        Assertions.assertNotNull(result);
+        Assertions.assertEquals(2, result.length);
+        Assertions.assertEquals("yanez vic", result[0]);
+        Assertions.assertEquals("VY", result[1]);
     }
 }

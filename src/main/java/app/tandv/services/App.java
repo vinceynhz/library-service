@@ -45,7 +45,7 @@ public class App {
         App app = new App();
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             LOGGER.info("Shutting down gracefully");
-            System.exit(app.close());
+            app.close();
         }));
         app.startUp();
     }

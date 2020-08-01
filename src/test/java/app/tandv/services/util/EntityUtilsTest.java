@@ -1,15 +1,17 @@
 package app.tandv.services.util;
 
 import app.tandv.services.data.entity.BookFormat;
-import org.junit.Assert;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+
 
 /**
  * @author Vic on 8/31/2018
  **/
-public class EntityUtilsTest {
+class EntityUtilsTest {
     @Test
-    public void testHashOfAll() {
+    void testHashOfAll() {
         int output = 1743391056;
         int input = EntityUtils.entityHash(
                 null,
@@ -26,6 +28,6 @@ public class EntityUtilsTest {
                 BookFormat.PAPERBACK,
                 new Exception("some object")
         );
-        Assert.assertEquals(output, input);
+        Assertions.assertEquals(output, input);
     }
 }

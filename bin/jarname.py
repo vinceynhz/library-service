@@ -8,7 +8,7 @@ POM_PATH = FILE_PATH + "/pom.xml"
 
 
 def main(argv):
-    if len(argv) == 0 or argv[0] == "jar":
+    if 0 == len(argv):
         print(read_app_props(POM_PATH), end='')
     else:
         print(read_app_props(POM_PATH, argv[0]), end='')
