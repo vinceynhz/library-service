@@ -2,6 +2,7 @@ package app.tandv.services.data.entity;
 
 import app.tandv.services.configuration.EventConfig;
 import app.tandv.services.util.EntityUtils;
+import app.tandv.services.util.StringUtils;
 import app.tandv.services.util.collections.FluentHashSet;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -12,9 +13,21 @@ import javax.persistence.*;
 import java.util.*;
 
 /**
+ * Notes on book entities:
+ *
+ * <strong>Normalization</strong>
+ * Book titles are going to be normalized according to the rules of title casing defined in
+ * {@link StringUtils#titleCase(String)}.
+ *
+ * <strong>Ordering</strong>
+ * The string used for alphabetical ordering will be determined according to the rules defined in
+ * {@link StringUtils#titleForOrdering(String)}.
+ * <p>
+ * Please note that two or more books may yield the same ordering value:
+ *
  * @author vic on 2018-08-28
  */
-@SuppressWarnings({"unused", "WeakerAccess"})
+@SuppressWarnings({"unused", "WeakerAccess", "JpaQlInspection"})
 @Entity
 @Table(name = "book")
 @NamedQueries({
@@ -27,7 +40,7 @@ import java.util.*;
                 query = "SELECT DISTINCT b FROM BookEntity b LEFT OUTER JOIN FETCH b.authors WHERE b.id IN :ids"
         )
 })
-public class BookEntity extends AbstractEntity {
+public class BookEntity extends AbstractEntity<BookEntity> {
     private static final Logger LOGGER = LoggerFactory.getLogger(BookEntity.class);
 
     private static final Set<String> REQUIRED_FIELDS = new FluentHashSet<String>()
@@ -35,28 +48,40 @@ public class BookEntity extends AbstractEntity {
             .thenAdd(EventConfig.FORMAT)
             .thenAdd(EventConfig.AUTHORS);
 
+    public BookEntity() {
+        super(BookEntity.class);
+    }
+
     public static BookEntity fromJson(JsonObject data) {
         LOGGER.debug("Building book entity from json data");
         if (!data.fieldNames().containsAll(REQUIRED_FIELDS)) {
             throw new IllegalArgumentException("Not enough attributes provided. Required: " + REQUIRED_FIELDS.toString());
         }
         BookFormat format = BookFormat.valueOf(data.getString(EventConfig.FORMAT));
-        BookEntity entity = new BookEntity();
-        entity.setTitle(data.getString(EventConfig.TITLE));
-        entity.setFormat(format);
-        if (data.containsKey(EventConfig.ISBN)) {
-            entity.setIsbn(data.getString(EventConfig.ISBN));
-        }
-        if (data.containsKey(EventConfig.YEAR)) {
-            entity.setYear(data.getString(EventConfig.YEAR));
-        }
-        if (data.containsKey(EventConfig.PAGES)) {
-            entity.setPages(data.getInteger(EventConfig.PAGES).shortValue());
-        }
+        String rawTitle = data.getString(EventConfig.TITLE);
+        String cleanTitle = StringUtils
+                .titleCase(rawTitle)
+                .orElseThrow(() -> new IllegalArgumentException("Unable to generate title case for title [" + rawTitle + "]"));
+        String ordering = StringUtils
+                .authorForOrdering(rawTitle)
+                .orElseThrow(() -> new IllegalArgumentException("Unable to generate ordering string for title [" + rawTitle + "]"));
+        String sha256 = StringUtils
+                .sha256(cleanTitle)
+                .orElseThrow(() -> new IllegalArgumentException("Unable to generate SHA 256 for title [" + cleanTitle + "]"));
+        BookEntity entity = new BookEntity()
+                .withFormat(format)
+                .withTitle(cleanTitle)
+                .withOrdering(ordering)
+                .withSha256(sha256);
+
+        Optional.ofNullable(data.getString(EventConfig.ISBN)).ifPresent(entity::setIsbn);
+        Optional.ofNullable(data.getString(EventConfig.YEAR)).ifPresent(entity::setYear);
+        Optional.ofNullable(data.getInteger(EventConfig.PAGES)).map(Integer::shortValue).ifPresent(entity::setPages);
+
         return entity;
     }
 
-    @Column(name = EventConfig.TITLE, nullable = false, length = 500)
+    @Column(name = EventConfig.TITLE, nullable = false)
     private String title;
 
     @Column(name = EventConfig.ISBN, length = 20)
@@ -82,15 +107,17 @@ public class BookEntity extends AbstractEntity {
     )
     private Set<AuthorEntity> authors = new HashSet<>();
 
-    public BookEntity() {
-    }
-
     public String getTitle() {
         return title;
     }
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public BookEntity withTitle(String title) {
+        this.title = title;
+        return this;
     }
 
     public String getIsbn() {
@@ -101,12 +128,22 @@ public class BookEntity extends AbstractEntity {
         this.isbn = isbn;
     }
 
+    public BookEntity withIsbn(String isbn) {
+        this.isbn = isbn;
+        return this;
+    }
+
     public String getYear() {
         return year;
     }
 
     public void setYear(String year) {
         this.year = year;
+    }
+
+    public BookEntity withYear(String year) {
+        this.year = year;
+        return this;
     }
 
     public BookFormat getFormat() {
@@ -117,6 +154,11 @@ public class BookEntity extends AbstractEntity {
         this.format = format;
     }
 
+    public BookEntity withFormat(BookFormat format) {
+        this.format = format;
+        return this;
+    }
+
     public Short getPages() {
         return pages;
     }
@@ -125,12 +167,22 @@ public class BookEntity extends AbstractEntity {
         this.pages = pages;
     }
 
+    public BookEntity withPages(Short pages) {
+        this.pages = pages;
+        return this;
+    }
+
     public Set<AuthorEntity> getAuthors() {
         return authors;
     }
 
     public void setAuthors(Set<AuthorEntity> authors) {
         this.authors = authors;
+    }
+
+    public BookEntity withAuthors(Set<AuthorEntity> authors) {
+        this.authors = authors;
+        return this;
     }
 
     public void addAuthor(AuthorEntity author) {
@@ -155,22 +207,21 @@ public class BookEntity extends AbstractEntity {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         BookEntity that = (BookEntity) o;
-        return Objects.equals(title, that.title) &&
-                Objects.equals(isbn, that.isbn) &&
-                Objects.equals(year, that.year) &&
-                format == that.format;
+        return Objects.equals(this.sha256, that.sha256);
     }
 
     @Override
     public int hashCode() {
-        return EntityUtils.entityHash(title, isbn, year, format);
+        return EntityUtils.entityHash(this.sha256);
     }
 
     @Override
     public String toString() {
         return this.getClass().getSimpleName() + "{" +
                 EventConfig.ID + "=" + id +
+                ", " + EventConfig.SHA_256 + "='" + this.sha256 + '\'' +
                 ", " + EventConfig.TITLE + "='" + title + '\'' +
+                ", " + EventConfig.ORDERING + "='" + this.ordering + '\'' +
                 ", " + EventConfig.ISBN + "='" + isbn + '\'' +
                 ", " + EventConfig.YEAR + "='" + year + '\'' +
                 ", " + EventConfig.FORMAT + "=" + format +
@@ -185,7 +236,9 @@ public class BookEntity extends AbstractEntity {
                 .collect(JsonArray::new, JsonArray::add, JsonArray::addAll);
         return new JsonObject()
                 .put(EventConfig.ID, this.id)
+                .put(EventConfig.SHA_256, this.sha256)
                 .put(EventConfig.TITLE, this.title)
+                .put(EventConfig.ORDERING, this.ordering)
                 .put(EventConfig.ISBN, this.isbn)
                 .put(EventConfig.YEAR, this.year)
                 .put(EventConfig.FORMAT, this.format.name())

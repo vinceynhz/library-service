@@ -22,7 +22,7 @@ APP_JAR_PATH=${APP_HOME}/${APP_NAME}.jar
 APP_LOG_FILE=${LOG_FOLDER}/${APP_NAME}.out
 APP_ERR_FILE=${LOG_FOLDER}/${APP_NAME}.err
 
-JVM_OPTS="-Xms256M -Xmx1024M -DLOG_DIR=${APP_HOME}"
+JVM_OPTS="-Xms256M -Xmx1024M -Dlog.dir=${APP_HOME}"
 DATE=$(date +%F\ %T)
 
 if [ ! -f ${LOG_FILE} ]; then

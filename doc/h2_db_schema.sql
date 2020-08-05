@@ -3,19 +3,23 @@
 drop table if exists AUTHOR;
 drop table if exists BOOK;
 drop table if exists BOOK_AUTHOR;
-
+drop table if exists AUTHOR_ALIAS;
 
 create table AUTHOR
 (
 	ID IDENTITY primary key,
-	NAME VARCHAR(255) not null
+  SHA256 VARCHAR(64) unique not null,
+	NAME VARCHAR(255) not null,
+  ORDERING VARCHAR(255) not null
 )
 ;
 
 create table BOOK
 (
 	ID IDENTITY primary key,
-	TITLE VARCHAR(500) not null,
+  SHA256 VARCHAR(64) unique not null,
+	TITLE VARCHAR(255) not null,
+  ORDERING VARCHAR(255) not null,
 	ISBN VARCHAR(20),
 	YEAR VARCHAR(4),
 	FORMAT VARCHAR(12) not null,
@@ -31,6 +35,19 @@ create table BOOK_AUTHOR
 		foreign key (AUTHOR_ID) references AUTHOR,
 	constraint BOOK_AUTHOR_BOOK_ID_FK
 		foreign key (BOOK_ID) references BOOK
+)
+;
+
+create table AUTHOR_ALIAS
+(
+	AUTHOR_ID LONG not null,
+	ALSO_KNOWN_AS LONG not null,
+	constraint AUTHOR_ALIAS_AUTHOR_ID_FK
+	foreign key (AUTHOR_ID) references AUTHOR
+	on update cascade,
+	constraint AUTHOR_ALIAS_AUTHOR_ID_FK_2
+	foreign key (ALSO_KNOWN_AS) references AUTHOR
+	on update cascade
 )
 ;
 

@@ -15,17 +15,22 @@ public final class EventConfig {
     public static final String UID = "uid";
     public static final String ST = "st";
     public static final String CONTENT = "content";
-    public static final String ERROR = "error";
     public static final String ENTITY_MANAGER = "em";
 
     // Entity related keys: aka those used by the database entities
     public static final String ID = "id";
+    public static final String SHA_256 = "sha256";
+    public static final String ORDERING = "ordering";
+
+    // Author fields
+    public static final String NAME = "name";
+    public static final String BOOKS = "books";
+
+    // Book fields
     public static final String TITLE = "title";
     public static final String ISBN = "isbn";
     public static final String YEAR = "year";
     public static final String FORMAT = "format";
     public static final String PAGES = "pages";
-    public static final String NAME = "name";
     public static final String AUTHORS = "authors";
-    public static final String BOOKS = "books";
 }

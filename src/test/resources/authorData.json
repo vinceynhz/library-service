@@ -1,0 +1,59 @@
+[
+  {
+    "input": "steffen laura",
+    "name": "Steffen Laura",
+    "ordering": "laura steffen",
+    "sha256": "C18C4479A3BD20FBAAD390E7815E765C4D57933760FF5AB8252AFCCFD9A94547",
+    "withBooks": true
+
+  },
+  {
+    "input": "RAIBEART ITRI",
+    "name": "Raibeart Itri",
+    "ordering": "itri raibeart",
+    "sha256": "8472DA49919D0E48C7F0164FC2982C72E3083B85C57AB6E0389235C90E142634",
+    "withBooks": true
+  },
+  {
+    "input": "luDovicUs ShamasH",
+    "name": "Ludovicus Shamash",
+    "ordering": "shamash ludovicus",
+    "sha256": "890F9118D9F5E368FF9A39DEE3108C6C770B6595F5DEBEBCF121C8815A285952",
+    "withBooks": true
+  },
+  {
+    "input": "blake victoria",
+    "name": "Blake Victoria",
+    "ordering": "victoria blake",
+    "sha256": "0CD43492EF3AE0D7139B8F1942FC076160E2A6FD4F3D7D603E15A0C77225766A",
+    "withBooks": true
+  },
+  {
+    "input": "diane maxwell",
+    "name": "Diane Maxwell",
+    "ordering": "maxwell diane",
+    "sha256": "B2882CC50026377458C31A3D578ABD08C6957113B51BEF2290082B3390B06D6D",
+    "withBooks": false
+  },
+  {
+    "input": "dr. diane maxwell",
+    "name": "Dr. Diane Maxwell",
+    "ordering": "maxwell diane",
+    "sha256": "466C76D0B7AE78C042F1EEF2D35AB8B56316F441D09E130F0973BDD463329DDC",
+    "withBooks": false
+  },
+  {
+    "input": "diane maxwell jr.",
+    "name": "Diane Maxwell Jr.",
+    "ordering": "maxwell diane",
+    "sha256": "9D430511015B13F2A71EC810777AD41D71E33BE59E7872F47CD999E12A03ADA4",
+    "withBooks": false
+  },
+  {
+    "input": "diane maxwell iii",
+    "name": "Diane Maxwell III",
+    "ordering": "maxwell diane",
+    "sha256": "59229D079EFB31209792E599E66D7811B324B7841118447D8F949AE53B7A2477",
+    "withBooks": false
+  }
+]

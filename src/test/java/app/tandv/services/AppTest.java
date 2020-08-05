@@ -3,10 +3,13 @@ package app.tandv.services;
 import app.tandv.services.configuration.EventConfig;
 import app.tandv.services.configuration.MediaTypes;
 import app.tandv.services.data.entity.BookFormat;
+import app.tandv.services.exception.PartialResultException;
+import app.tandv.services.util.AuthorData;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
 import io.restassured.RestAssured;
+import io.restassured.response.ValidatableResponse;
 import io.restassured.specification.RequestSpecification;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -15,7 +18,9 @@ import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import javax.persistence.NoResultException;
+import javax.persistence.PersistenceException;
+import java.io.*;
 import java.net.ServerSocket;
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +42,7 @@ class AppTest {
 
     private static App app;
 
-    private static List<JsonObject> authors;
+    private static List<AuthorData> authors;
     private static List<JsonObject> books;
 
     @BeforeAll
@@ -55,15 +60,15 @@ class AppTest {
 
         await().atMost(30, TimeUnit.SECONDS).until(app::isStarted);
 
-        LOGGER.info("Fabricating test data");
-        // Author names
-        authors = Stream.of(
-                "Steffen Laura",
-                "Raibeart Itri",
-                "Ludovicus Shamash",
-                "Blake Victoria")
-                .map(name -> new JsonObject().put(EventConfig.NAME, name))
+        LOGGER.info("Loading test data");
+        // Author data
+        authors = new JsonArray(AppTest.loadStringResource("authorData.json"))
+                .stream()
+                .filter(obj -> JsonObject.class.isAssignableFrom(obj.getClass()))
+                .map(JsonObject.class::cast)
+                .map(AuthorData::new)
                 .collect(Collectors.toList());
+
         books = Stream.of(
                 "The Devil's Trap", // authors[0]
                 "Fool's Birthright", // authors[0,1]
@@ -103,24 +108,19 @@ class AppTest {
     @Order(2)
     void testAddAuthors() {
         LOGGER.info("\nTEST ADD AUTHORS ====================================================");
-        String name;
-        for (JsonObject payload : authors) {
-            name = payload.getString(EventConfig.NAME);
+        for (AuthorData testCase : authors) {
+            JsonObject payload = testCase.toPayload();
             // We add one author
-            String responseBody = request()
+            ValidatableResponse response = request()
                     .body(payload.encode())
                     .post("/data/author")
                     .then().assertThat()
-                    .statusCode(HttpResponseStatus.CREATED.code())
-                    // name is present
-                    .and().body(EventConfig.NAME, hasToString(name))
-                    // no books are present
-                    .and().body(EventConfig.BOOKS, hasSize(0))
-                    // and we got an id
-                    .and().body("$", hasKey(EventConfig.ID))
-                    .extract().body().jsonPath().prettify();
-            // The response will send us back the whole author details so we update our test data
-            payload.mergeIn(new JsonObject(responseBody));
+                    .statusCode(HttpResponseStatus.CREATED.code());
+            testCase.setId(
+                    testCase.validate(response)
+                            .extract().body()
+                            .jsonPath().getInt(EventConfig.ID)
+            );
         }
     }
 
@@ -131,7 +131,7 @@ class AppTest {
         // Now that we got authors loaded in the DB and we know their IDs we can populate them into our test data
         List<Integer> authorIds = authors
                 .stream()
-                .map(author -> author.getInteger(EventConfig.ID))
+                .map(AuthorData::getId)
                 .collect(Collectors.toList());
 
         books.get(0).getJsonArray(EventConfig.AUTHORS).add(authorIds.get(0));
@@ -229,7 +229,8 @@ class AppTest {
                 .body(payload.encode())
                 .post("/data/author")
                 .then()
-                .statusCode(HttpResponseStatus.BAD_REQUEST.code());
+                .statusCode(HttpResponseStatus.BAD_REQUEST.code())
+                .and().body("exception", hasToString(IllegalArgumentException.class.getName()));
     }
 
     @Test
@@ -240,7 +241,52 @@ class AppTest {
                 .body(payload.encode())
                 .post("/data/book")
                 .then()
-                .statusCode(HttpResponseStatus.BAD_REQUEST.code());
+                .statusCode(HttpResponseStatus.BAD_REQUEST.code())
+                .and().body("exception", hasToString(IllegalArgumentException.class.getName()));
+    }
+
+    @Test
+    void testBookWithUnknownAuthor() {
+        LOGGER.info("\nTEST BOOK WITH UNKNOWN AUTHOR =======================================");
+        JsonObject payload = new JsonObject()
+                .put(EventConfig.TITLE, "The Unknown")
+                .put(EventConfig.FORMAT, BookFormat.PAPERBACK.name())
+                .put(EventConfig.AUTHORS, new JsonArray().add(666));
+        request()
+                .body(payload.encode())
+                .post("/data/book")
+                .then()
+                .statusCode(HttpResponseStatus.NOT_FOUND.code())
+                .and().body("exception", hasToString(NoResultException.class.getName()));
+    }
+
+    @Test
+    void testBookWithOneMissingAuthor() {
+        LOGGER.info("\nTEST BOOK WITH ONE MISSING AUTHOR ===================================");
+        JsonObject payload = new JsonObject()
+                .put(EventConfig.TITLE, "The Unknown")
+                .put(EventConfig.FORMAT, BookFormat.PAPERBACK.name())
+                .put(EventConfig.AUTHORS, new JsonArray().add(1).add(666));
+        request()
+                .body(payload.encode())
+                .post("/data/book")
+                .then()
+                .statusCode(HttpResponseStatus.NOT_FOUND.code())
+                .and().body("exception", hasToString(PartialResultException.class.getName()));
+    }
+
+    @Test
+    void testDuplicateAuthors() {
+        LOGGER.info("\nTEST DUPLICATE AUTHOR NAMES =========================================");
+        Stream.of("Blake Victoria", "blake victoria", "BLAKE VICTORIA")
+                .map(duplicatedName -> new JsonObject().put(EventConfig.NAME, duplicatedName))
+                .forEach(payload -> request()
+                        .body(payload.encode())
+                        .post("/data/author")
+                        .then().assertThat()
+                        .statusCode(HttpResponseStatus.CONFLICT.code())
+                        .and().body("exception", hasToString(PersistenceException.class.getName()))
+                );
     }
 
     private static RequestSpecification request() {
@@ -259,10 +305,25 @@ class AppTest {
         LOGGER.debug("Matching author:\n{}", author.encodePrettily());
 
         Assertions.assertTrue(author.containsKey(EventConfig.BOOKS));
-        Assertions.assertFalse(author.getJsonArray(EventConfig.BOOKS).isEmpty());
 
         // from the DB
         int authorId = author.getInteger(EventConfig.ID);
+
+        // from test data
+        boolean expectsBooks = authors.stream()
+                .filter(authorData -> authorData.getId() == authorId)
+                .findFirst()
+                .map(authorData -> authorData.expectsBooks)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown author with id " + authorId));
+
+        // If per test data we don't expect books on this author
+        if (!expectsBooks) {
+            // we check that effectively we didn't get books
+            Assertions.assertTrue(author.getJsonArray(EventConfig.BOOKS).isEmpty());
+            return;
+        }
+
+        Assertions.assertFalse(author.getJsonArray(EventConfig.BOOKS).isEmpty());
 
         JsonArray authorBooks = author.getJsonArray(EventConfig.BOOKS);
 
@@ -277,11 +338,8 @@ class AppTest {
                 )
                 // extract the authors
                 .map(book -> book.getJsonArray(EventConfig.AUTHORS))
-                .map(authorsInBook -> authorsInBook.contains(authorId))
-                .filter(aBoolean -> {
-                    Assertions.assertTrue(aBoolean);
-                    return aBoolean;
-                })
+                // check if the book contains the author
+                .filter(authorsInBook -> authorsInBook.contains(authorId))
                 .count()
                 .subscribe(
                         validBooks -> Assertions.assertEquals((long) validBooks, authorBooks.size()),
@@ -293,5 +351,18 @@ class AppTest {
                         }
                 );
         toDispose.dispose();
+    }
+
+    private static String loadStringResource(String fileName) throws IOException {
+        ClassLoader loader = ClassLoader.getSystemClassLoader();
+        try (InputStream is = loader.getResourceAsStream(fileName)) {
+            if (is == null) {
+                throw new FileNotFoundException("File " + fileName + " yielded null input stream");
+            }
+            try (InputStreamReader isr = new InputStreamReader(is)) {
+                BufferedReader reader = new BufferedReader(isr);
+                return reader.lines().collect(Collectors.joining(System.lineSeparator()));
+            }
+        }
     }
 }
