@@ -1,7 +1,8 @@
-package app.tandv.services.util;
+package app.tandv.services.test;
 
 import app.tandv.services.data.entity.BookFormat;
 
+import app.tandv.services.util.EntityUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

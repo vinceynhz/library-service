@@ -1,6 +1,7 @@
 package app.tandv.services.data.repository;
 
 import app.tandv.services.data.entity.AbstractEntity;
+import app.tandv.services.exception.PartialResultException;
 import io.reactivex.Observable;
 import io.vertx.reactivex.core.Vertx;
 import org.slf4j.Logger;
@@ -10,6 +11,7 @@ import java.util.*;
 import java.util.function.Supplier;
 
 import javax.persistence.EntityManager;
+import javax.persistence.NoResultException;
 import javax.persistence.PersistenceException;
 
 /**
@@ -72,10 +74,19 @@ public abstract class LibraryRepository<T extends AbstractEntity> {
         LOGGER.debug(String.valueOf(ids));
         String queryName = type.getSimpleName() + ".findAllById";
         return this.rxExecuteQuery(
-                () -> entityManager
-                        .createNamedQuery(queryName, type)
-                        .setParameter("ids", ids)
-                        .getResultList()
+                () -> {
+                    List<T> result = entityManager
+                            .createNamedQuery(queryName, type)
+                            .setParameter("ids", ids)
+                            .getResultList();
+                    if (result.isEmpty()) {
+                        throw new NoResultException("None of expected " + type.getSimpleName() + " ids were found");
+                    }
+                    if (result.size() < ids.size()) {
+                        throw new PartialResultException("Not all of expected " + type.getSimpleName() + "ids were found");
+                    }
+                    return result;
+                }
         );
     }
 

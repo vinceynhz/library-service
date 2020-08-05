@@ -1,103 +1,174 @@
 package app.tandv.services.util;
 
+import app.tandv.services.util.collections.FluentArrayList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.function.IntPredicate;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
+
 
 /**
  * @author vic on 2018-08-28
  */
 public final class StringUtils {
+    private static final Logger LOGGER = LoggerFactory.getLogger(StringUtils.class);
+
+    public static final Pattern ROMAN_NUMERAL = Pattern.compile("^m{0,3}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})$");
+
     private static final Set<String> ARTICLES = new HashSet<>(Arrays.asList("a", "an", "of", "the", "is", "in", "to"));
     private static final Set<String> TITLE_ARTICLES = new HashSet<>(Arrays.asList("a", "an", "the"));
     private static final Set<String> HONORIFICS = new HashSet<>(Arrays.asList("sir", "sire", "mrs", "miss", "ms", "lord", "dr", "phd", "dphil", "md", "do", "doc", "sr", "jr"));
-    private static final Pattern ROMAN_NUMERAL = Pattern.compile("^(?=[mdclxvi])m*d?c{0,4}l?x{0,4}v?i{0,4}$");
     private static final String WORD_SEPARATOR = " ";
-    private static final String[] EMPTY_STRING_ARRAY = new String[0];
+    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+    private static final char EMPTY_SPACE_ASCII = 0x20;
+    private static final IntPredicate IS_ALPHANUM = charCodePoint -> Character.isAlphabetic(charCodePoint)
+            || Character.isDigit(charCodePoint)
+            || charCodePoint == EMPTY_SPACE_ASCII;
+    private static final Predicate<String> INVALID_AUTHOR_WORD = word -> HONORIFICS.contains(word)
+            || ROMAN_NUMERAL.matcher(word).matches();
+
+    private static MessageDigest DIGEST = null;
+
+    static {
+        try {
+            DIGEST = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException exception) {
+            LOGGER.error("Unable to get SHA 256 digest", exception);
+        }
+    }
 
     private StringUtils() {
     }
 
-    public static boolean notValidString(final String toValidate) {
-        return toValidate == null || toValidate.isEmpty();
-    }
-
-    public static boolean validString(final String toValidate) {
-        return !notValidString(toValidate);
+    public static Optional<String> titleCase(final String title) {
+        return titleCase(title, false);
     }
 
     /**
-     * @param toClean string that needs to be cleared
-     * @return a string in containing only [a-z0-9 ]
+     * @param title to convert to proper case
+     * @param force to force all upper case to be capitalized
+     * @return an optional that will contain a string with each individual word capitalized. Articles contained in the
+     * original string will not be capitalized except if it is the first word in the string.
      */
-    private static String cleanString(final String toClean) {
-        if (notValidString(toClean)) {
-            return toClean;
-        }
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int ind = 0; ind < toClean.length(); ind++) {
-            int charCodePoint = toClean.codePointAt(ind);
-            if (Character.isAlphabetic(charCodePoint) || Character.isDigit(charCodePoint) || charCodePoint == ' ') {
-                stringBuilder.append((char) Character.toLowerCase(charCodePoint));
-            }
-        }
-        return stringBuilder.toString();
-    }
-
-    public static String titleForOrdering(final String toOrder) {
-        if (notValidString(toOrder)) {
-            return toOrder;
-        }
-        StringBuilder orderedTitle = new StringBuilder();
-        String[] words = cleanString(toOrder).split(WORD_SEPARATOR);
-        boolean firstFound = false;
-        for (String word : words) {
-            if (firstFound) {
-                orderedTitle.append(" ").append(word);
-            } else if (!TITLE_ARTICLES.contains(word)) {
-                firstFound = true;
-                orderedTitle.append(word);
-            }
-        }
-        return orderedTitle.toString();
+    public static Optional<String> titleCase(final String title, final boolean force) {
+        return Optional.ofNullable(title)
+                .filter(StringUtils::validString)
+                .map(words -> title.split(WORD_SEPARATOR))
+                .map(FluentArrayList::new)
+                .map(words -> words.thenReplaceAll(word -> capitalize(word, force, false)))
+                .map(words -> words.thenReplace(word -> capitalize(word, false, true), 0))
+                .map(words -> String.join(WORD_SEPARATOR, words));
     }
 
     /**
-     * @param toOrder name of the author that needs to be cleaned
-     * @return an array of exactly 2 entries, the first index will contain the name ready for ordering, the second one
-     * will contain the initials of the name
+     * @param title of a book to normalize and order
+     * @return an {@link Optional} containing the title of a book in normalized form starting from the first non article
+     * word
      */
-    public static String[] authorForOrdering(final String toOrder) {
-        if (notValidString(toOrder)) {
-            return EMPTY_STRING_ARRAY;
-        }
-        String[] words = cleanString(toOrder).split(WORD_SEPARATOR);
-        List<String> cleanedName = new ArrayList<>(words.length);
-        for (String word : words) {
-            if (!HONORIFICS.contains(word) && !ROMAN_NUMERAL.matcher(word).matches()) {
-                cleanedName.add(word);
-            }
-        }
-        String initials;
-        if (cleanedName.size() == 1) {
-            // If we have a one word name, take the first two characters of it as initials
-            initials = cleanedName.get(0).substring(0, 2);
-        } else {
-            // If not, take the first character of the first and second words
-            initials = String.valueOf(cleanedName.get(0).charAt(0)) + cleanedName.get(1).charAt(0);
-        }
-        // Take the last one and put it at the beginning
-        cleanedName.add(0, cleanedName.remove(cleanedName.size() - 1));
-        return new String[]{String.join(" ", cleanedName), initials.toUpperCase()};
+    public static Optional<String> titleForOrdering(final String title) {
+        return Optional.ofNullable(title)
+                .filter(StringUtils::validString)
+                // normalize the input string
+                .map(StringUtils::normalize)
+                // split by any word separator
+                .map(normalized -> normalized.split(WORD_SEPARATOR))
+                // convert to fluent array list
+                .map(FluentArrayList::new)
+                // cut after first word not in title articles
+                .map(words -> words.removeBefore(words.firstNotIn(TITLE_ARTICLES)))
+                // join back together
+                .map(words -> String.join(WORD_SEPARATOR, words));
     }
 
     /**
-     * @param word to capitalize
-     * @return the word with the first alphabetic ([A-Za-z]) character set to uppercase, the rest of the word to
-     * lowercase.
+     * @param name of an author to normalize and order
+     * @return an {@link Optional} containing the author name in normalized form removing any honorific or roman
+     * numerals from the name and starting from the first last name
      */
-    static String capitalize(final String word, final boolean capitalizeArticles) {
+    public static Optional<String> authorForOrdering(final String name) {
+        return Optional.ofNullable(name)
+                .filter(StringUtils::validString)
+                // normalize the input string
+                .map(StringUtils::normalize)
+                // split by any word separator
+                .map(normalized -> normalized.split(WORD_SEPARATOR))
+                // convert to fluent array list
+                .map(FluentArrayList::new)
+                // remove all non invalid words for an author ordering
+                .map(words -> words.thenRemoveIf(StringUtils.INVALID_AUTHOR_WORD))
+                // swap first to last word
+                .map(words -> words.swap(0, -1))
+                // join back on a single string
+                .map(words -> String.join(WORD_SEPARATOR, words));
+    }
+
+    /**
+     * @param string to get its sha 256 representation
+     * @return a sha 256 digest over the normalization of the string
+     */
+    public static Optional<String> sha256(final String string) {
+        return Optional.ofNullable(string)
+                .filter(StringUtils::validString)
+                // normalize the input string
+                .map(StringUtils::normalize)
+                // convert to bytes
+                .map(w -> w.getBytes(StandardCharsets.UTF_8))
+                // if digest available, generate
+                .flatMap(bytes -> Optional.ofNullable(DIGEST).map(digest -> digest.digest(bytes)))
+                // convert to hex string
+                .map(StringUtils::byteToString);
+    }
+
+    public static boolean validString(final String string) {
+        return string != null && !string.isEmpty();
+    }
+
+    /**
+     * This function won't do any null checking
+     *
+     * @param toClean self explanatory
+     * @return a normalized string containing only [a-z0-9 ]
+     */
+    private static String normalize(final String toClean) {
+        // convert to code points
+        return toClean.codePoints()
+                // extract only those valid ones
+                .filter(StringUtils.IS_ALPHANUM)
+                // convert to lower case
+                .map(Character::toLowerCase)
+                .mapToObj(codePoint -> (char) codePoint)
+                // put back on a single string
+                .collect(StringBuilder::new, StringBuilder::append, StringBuilder::append)
+                .toString();
+    }
+
+    /**
+     * This function won't do any null checking.
+     * <p>
+     * These are the capitalization rules:
+     * - The first alphabetic character ([a-z]) will be set to upper case, the rest to lower case, except for the
+     * following cases
+     * - If the word already contains 2 or more upper case characters (as in the case of acronyms) no change will be
+     * made, unless force flag is set
+     * - If the word is a valid roman numeral as defined by {@link StringUtils#ROMAN_NUMERAL}, the word will be returned
+     * in all upper case
+     * - If the word is a valid article it will depend on the flag passed whether the first capitalization rule is
+     * applied.
+     *
+     * @param word               to capitalize
+     * @param force              whether more than one capital letter should be ignored
+     * @param capitalizeArticles whether articles should be or not capitalized
+     * @return a capitalized word as described before.
+     */
+    private static String capitalize(final String word, final boolean force, final boolean capitalizeArticles) {
         // We need to check if a given word has two or more uppercase letters
-        for (int ind = 0, counter = 0; ind < word.length(); ind++) {
+        for (int ind = 0, counter = 0; !force && ind < word.length(); ind++) {
             if (Character.isUpperCase(word.codePointAt(ind))) {
                 counter++;
                 if (counter == 2) {
@@ -107,6 +178,9 @@ public final class StringUtils {
             }
         }
         String lowerCaseWord = word.toLowerCase();
+        if (ROMAN_NUMERAL.matcher(lowerCaseWord).matches()) {
+            return word.toUpperCase();
+        }
         if (!capitalizeArticles && ARTICLES.contains(lowerCaseWord)) {
             return lowerCaseWord;
         }
@@ -120,17 +194,13 @@ public final class StringUtils {
         return new String(working);
     }
 
-    public static String titleCase(final String title) {
-        if (notValidString(title)) {
-            return title;
+    private static String byteToString(final byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for (int j = 0; j < bytes.length; j++) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+            hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
         }
-        String[] words = title.split(WORD_SEPARATOR);
-        words[0] = capitalize(words[0], true);
-        if (words.length > 1) {
-            for (int ind = 1; ind < words.length; ind++) {
-                words[ind] = capitalize(words[ind], false);
-            }
-        }
-        return String.join(WORD_SEPARATOR, words);
+        return new String(hexChars);
     }
 }
