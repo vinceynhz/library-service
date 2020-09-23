@@ -13,48 +13,48 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Notes on author entities:
+ * Notes on contributor entities:
  *
  * <strong>Normalization</strong>
- * Author names are going to be normalized according to the rules of title casing defined in
+ * Contributor names are going to be normalized according to the rules of title casing defined in
  * {@link StringUtils#titleCase(String)}.
  *
  * <strong>Ordering</strong>
- * The string used for alphabetical ordering will be determined according to the rules defined in
- * {@link StringUtils#authorForOrdering(String)}.
+ * The string used for alphabetical cataloguing will be determined according to the rules defined in
+ * {@link StringUtils#contributorForOrdering(String)}.
  * <p>
- * Please note that two or more authors may yield the same ordering value:
+ * Please note that two or more contributors may yield the same cataloguing value:
  * - Diane Maxwell
  * - Dr. Diane Maxwell
  * - Diane Maxwell Jr.
  * - Diane Maxwell III
  * <p>
- * All above names would be ordered as <em>maxwell diane</em> once all honorifics, special characters and roman numerals
- * are removed.
+ * All above names would be ordered as <em>maxwell diane</em> once all honorifics, special characters
+ * and roman numerals are removed.
  *
  * <strong>Uniqueness</strong>
- * An author uniqueness is determined by the {@link StringUtils#sha256(String)} function over the normalized version of
- * the author's name as described above.
+ * A contributor uniqueness is determined by the {@link StringUtils#sha256(String)} function over the
+ * normalized version of the contributor's name as described above.
  *
  * <p>
- * The case for homonym authors is still to be determined.
+ * The case for homonym contributors is still to be determined.
  *
  * @author vic on 2018-08-31
  */
 @SuppressWarnings({"unused", "WeakerAccess", "JpaQlInspection"})
 @Entity
-@Table(name = "author")
+@Table(name = "contributor")
 @NamedQueries({
         @NamedQuery(
-                name = "AuthorEntity.findAll",
-                query = "SELECT DISTINCT a FROM AuthorEntity a LEFT OUTER JOIN FETCH a.books"
+                name = "ContributorEntity.findAll",
+                query = "SELECT DISTINCT a FROM ContributorEntity a LEFT OUTER JOIN FETCH a.books"
         ),
         @NamedQuery(
-                name = "AuthorEntity.findAllById",
-                query = "SELECT DISTINCT a FROM AuthorEntity a WHERE a.id IN :ids"
+                name = "ContributorEntity.findAllById",
+                query = "SELECT DISTINCT a FROM ContributorEntity a WHERE a.id IN :ids"
         )
 })
-public class AuthorEntity extends AbstractEntity<AuthorEntity> {
+public class ContributorEntity extends LibraryEntity<ContributorEntity> {
     private static final Set<String> REQUIRED_FIELDS = new FluentHashSet<String>()
             .thenAdd(EventConfig.NAME);
 
@@ -62,14 +62,14 @@ public class AuthorEntity extends AbstractEntity<AuthorEntity> {
     private String name;
 
     // This maps to the field in the BookEntity class, not to the table
-    @ManyToMany(mappedBy = EventConfig.AUTHORS)
+    @ManyToMany(mappedBy = EventConfig.CONTRIBUTORS)
     private Set<BookEntity> books = new HashSet<>();
 
-    public AuthorEntity() {
-        super(AuthorEntity.class);
+    public ContributorEntity() {
+        super(ContributorEntity.class);
     }
 
-    public static AuthorEntity fromJson(JsonObject data) throws IllegalArgumentException {
+    public static ContributorEntity fromJson(JsonObject data) throws IllegalArgumentException {
         if (!data.fieldNames().containsAll(REQUIRED_FIELDS)) {
             throw new IllegalArgumentException("Not enough attributes provided. Required: " + REQUIRED_FIELDS.toString());
         }
@@ -78,15 +78,15 @@ public class AuthorEntity extends AbstractEntity<AuthorEntity> {
                 .titleCase(rawName, true) // for author names we need to handle upper case
                 .orElseThrow(() -> new IllegalArgumentException("Unable to generate title case for name [" + rawName + "]"));
         String ordering = StringUtils
-                .authorForOrdering(rawName)
-                .orElseThrow(() -> new IllegalArgumentException("Unable to generate ordering string for name [" + rawName + "]"));
+                .contributorForOrdering(rawName)
+                .orElseThrow(() -> new IllegalArgumentException("Unable to generate cataloguing string for name [" + rawName + "]"));
         String sha256 = StringUtils
                 .sha256(normalized)
                 .orElseThrow(() -> new IllegalArgumentException("Unable to generate SHA 256 for name [" + normalized + "]"));
 
-        return new AuthorEntity()
+        return new ContributorEntity()
                 .withName(normalized)
-                .withOrdering(ordering)
+                .withCataloguing(ordering)
                 .withSha256(sha256);
     }
 
@@ -98,7 +98,7 @@ public class AuthorEntity extends AbstractEntity<AuthorEntity> {
         this.name = name;
     }
 
-    public AuthorEntity withName(String name) {
+    public ContributorEntity withName(String name) {
         this.name = name;
         return this;
     }
@@ -111,7 +111,7 @@ public class AuthorEntity extends AbstractEntity<AuthorEntity> {
         this.books = books;
     }
 
-    public AuthorEntity withBooks(Set<BookEntity> books) {
+    public ContributorEntity withBooks(Set<BookEntity> books) {
         this.books = books;
         return this;
     }
@@ -120,7 +120,7 @@ public class AuthorEntity extends AbstractEntity<AuthorEntity> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        AuthorEntity that = (AuthorEntity) o;
+        ContributorEntity that = (ContributorEntity) o;
         return Objects.equals(this.sha256, that.sha256);
     }
 
@@ -135,7 +135,7 @@ public class AuthorEntity extends AbstractEntity<AuthorEntity> {
                 EventConfig.ID + "=" + this.id +
                 ", " + EventConfig.SHA_256 + "='" + this.sha256 + '\'' +
                 ", " + EventConfig.NAME + "='" + this.name + '\'' +
-                ", " + EventConfig.ORDERING + "='" + this.ordering + '\'' +
+                ", " + EventConfig.CATALOGUING + "='" + this.cataloguing + '\'' +
                 ", " + EventConfig.BOOKS + "=" + this.books.size() +
                 '}';
     }
@@ -149,7 +149,7 @@ public class AuthorEntity extends AbstractEntity<AuthorEntity> {
                 .put(EventConfig.ID, this.id)
                 .put(EventConfig.SHA_256, this.sha256)
                 .put(EventConfig.NAME, this.name)
-                .put(EventConfig.ORDERING, this.ordering)
+                .put(EventConfig.CATALOGUING, this.cataloguing)
                 .put(EventConfig.BOOKS, bookIds);
     }
 }

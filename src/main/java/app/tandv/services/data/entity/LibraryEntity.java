@@ -6,6 +6,12 @@ import io.vertx.core.json.JsonObject;
 import javax.persistence.*;
 
 /**
+ * This class represents an record of an entity in the library database with the following characteristics:
+ * - The data in the record is unique (not two records of similar data can be created)
+ * - The data in the record can be sorted for cataloguing
+ *
+ * Uniqueness and cataloguing rules must be defined by each implementing class.
+ *
  * Any implementing class should meet the following criteria:
  * - Provide JPA named queries findAll and findAllById
  *
@@ -13,7 +19,7 @@ import javax.persistence.*;
  */
 @SuppressWarnings({"unused", "WeakerAccess"})
 @MappedSuperclass
-public abstract class AbstractEntity<T> {
+public abstract class LibraryEntity<T> {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
@@ -21,13 +27,13 @@ public abstract class AbstractEntity<T> {
     @Column(name = EventConfig.SHA_256, unique = true, nullable = false)
     String sha256;
 
-    @Column(name = EventConfig.ORDERING, nullable = false)
-    String ordering;
+    @Column(name = EventConfig.CATALOGUING, nullable = false)
+    String cataloguing;
 
     @Transient
     private final Class<T> subtype;
 
-    AbstractEntity(Class<T> subtype) {
+    LibraryEntity(Class<T> subtype) {
         this.subtype = subtype;
     }
 
@@ -58,16 +64,16 @@ public abstract class AbstractEntity<T> {
         return subtype.cast(this);
     }
 
-    public String getOrdering() {
-        return ordering;
+    public String getCataloguing() {
+        return cataloguing;
     }
 
-    public void setOrdering(String ordering) {
-        this.ordering = ordering;
+    public void setCataloguing(String cataloguing) {
+        this.cataloguing = cataloguing;
     }
 
-    public T withOrdering(String ordering) {
-        this.ordering = ordering;
+    public T withCataloguing(String ordering) {
+        this.cataloguing = ordering;
         return subtype.cast(this);
     }
 

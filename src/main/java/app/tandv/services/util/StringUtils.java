@@ -20,11 +20,11 @@ public final class StringUtils {
     private static final Logger LOGGER = LoggerFactory.getLogger(StringUtils.class);
 
     public static final Pattern ROMAN_NUMERAL = Pattern.compile("^m{0,3}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})$");
+    public static final String WORD_SEPARATOR = " ";
 
     private static final Set<String> ARTICLES = new HashSet<>(Arrays.asList("a", "an", "of", "the", "is", "in", "to"));
     private static final Set<String> TITLE_ARTICLES = new HashSet<>(Arrays.asList("a", "an", "the"));
     private static final Set<String> HONORIFICS = new HashSet<>(Arrays.asList("sir", "sire", "mrs", "miss", "ms", "lord", "dr", "phd", "dphil", "md", "do", "doc", "sr", "jr"));
-    private static final String WORD_SEPARATOR = " ";
     private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
     private static final char EMPTY_SPACE_ASCII = 0x20;
     private static final IntPredicate IS_ALPHANUM = charCodePoint -> Character.isAlphabetic(charCodePoint)
@@ -69,7 +69,8 @@ public final class StringUtils {
     /**
      * @param title of a book to normalize and order
      * @return an {@link Optional} containing the title of a book in normalized form starting from the first non article
-     * word
+     * word or entity, as these may encompass numbers (i.e {@code "The 77th regime"}, would be ordered as {@code "77th
+     * regime"}).
      */
     public static Optional<String> titleForOrdering(final String title) {
         return Optional.ofNullable(title)
@@ -91,7 +92,7 @@ public final class StringUtils {
      * @return an {@link Optional} containing the author name in normalized form removing any honorific or roman
      * numerals from the name and starting from the first last name
      */
-    public static Optional<String> authorForOrdering(final String name) {
+    public static Optional<String> contributorForOrdering(final String name) {
         return Optional.ofNullable(name)
                 .filter(StringUtils::validString)
                 // normalize the input string

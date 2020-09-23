@@ -12,7 +12,7 @@ import static org.hamcrest.Matchers.hasToString;
 /**
  * @author vic on 2020-08-04
  */
-public final class AuthorData {
+public final class ContributorData {
     private final String input;
     private final String expectedName;
     private final String expectedOrdering;
@@ -21,16 +21,16 @@ public final class AuthorData {
 
     private int id;
 
-    public AuthorData(JsonObject fromJsonObject) {
+    public ContributorData(JsonObject fromJsonObject) {
         Assertions.assertTrue(fromJsonObject.containsKey("input"));
         Assertions.assertTrue(fromJsonObject.containsKey(EventConfig.NAME));
-        Assertions.assertTrue(fromJsonObject.containsKey(EventConfig.ORDERING));
+        Assertions.assertTrue(fromJsonObject.containsKey(EventConfig.CATALOGUING));
         Assertions.assertTrue(fromJsonObject.containsKey(EventConfig.SHA_256));
         Assertions.assertTrue(fromJsonObject.containsKey("withBooks"));
 
         this.input = fromJsonObject.getString("input");
         this.expectedName = fromJsonObject.getString(EventConfig.NAME);
-        this.expectedOrdering = fromJsonObject.getString(EventConfig.ORDERING);
+        this.expectedOrdering = fromJsonObject.getString(EventConfig.CATALOGUING);
         this.expectedSha256 = fromJsonObject.getString(EventConfig.SHA_256);
         this.expectsBooks = fromJsonObject.getBoolean("withBooks");
     }
@@ -53,7 +53,7 @@ public final class AuthorData {
                 .and().body("$", hasKey(EventConfig.ID))
                 // author has all expected values
                 .and().body(EventConfig.NAME, hasToString(this.expectedName))
-                .and().body(EventConfig.ORDERING, hasToString(this.expectedOrdering))
+                .and().body(EventConfig.CATALOGUING, hasToString(this.expectedOrdering))
                 .and().body(EventConfig.SHA_256, hasToString(this.expectedSha256))
                 // and no books are present
                 .and().body(EventConfig.BOOKS, hasSize(0));

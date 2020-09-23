@@ -1,4 +1,4 @@
-package app.tandv.services.handler;
+package app.tandv.services.data.handler;
 
 import app.tandv.services.exception.PartialResultException;
 import app.tandv.services.util.DisposableHandler;
@@ -17,7 +17,7 @@ import java.util.function.BiFunction;
 /**
  * @author vic on 2020-07-21
  */
-abstract class AbstractDBHandler extends DisposableHandler {
+abstract class LibraryHandler extends DisposableHandler {
     private static final Map<String, Integer> EXCEPTION_STATUS_CODE = new FluentHashMap<String, Integer>()
             .thenPut(IllegalArgumentException.class.getSimpleName(), HttpResponseStatus.BAD_REQUEST.code())
             .thenPut(NoResultException.class.getSimpleName(), HttpResponseStatus.NOT_FOUND.code())

@@ -4,7 +4,7 @@ import app.tandv.services.configuration.EventConfig;
 import app.tandv.services.configuration.MediaTypes;
 import app.tandv.services.data.entity.BookFormat;
 import app.tandv.services.exception.PartialResultException;
-import app.tandv.services.util.AuthorData;
+import app.tandv.services.util.ContributorData;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.Observable;
 import io.reactivex.disposables.Disposable;
@@ -42,7 +42,7 @@ class AppTest {
 
     private static App app;
 
-    private static List<AuthorData> authors;
+    private static List<ContributorData> contributors;
     private static List<JsonObject> books;
 
     @BeforeAll
@@ -61,24 +61,24 @@ class AppTest {
         await().atMost(30, TimeUnit.SECONDS).until(app::isStarted);
 
         LOGGER.info("Loading test data");
-        // Author data
-        authors = new JsonArray(AppTest.loadStringResource("authorData.json"))
+        // Contributor data
+        contributors = new JsonArray(AppTest.loadStringResource("contributorData.json"))
                 .stream()
                 .filter(obj -> JsonObject.class.isAssignableFrom(obj.getClass()))
                 .map(JsonObject.class::cast)
-                .map(AuthorData::new)
+                .map(ContributorData::new)
                 .collect(Collectors.toList());
 
         books = Stream.of(
-                "The Devil's Trap", // authors[0]
-                "Fool's Birthright", // authors[0,1]
-                "Electric Apocalypse", // authors[2]
-                "The Secret of the Vanishing Baker", // authors[3]
-                "Death of the Singing Monkey") // authors[2,3]
+                "The Devil's Trap", // contributors[0]
+                "Fool's Birthright", // contributors[0,1]
+                "Electric Apocalypse", // contributors[2]
+                "The Secret of the Vanishing Baker", // contributors[3]
+                "Death of the Singing Monkey") // contributors[2,3]
                 .map(title -> new JsonObject()
                         .put(EventConfig.TITLE, title)
                         .put(EventConfig.FORMAT, BookFormat.PAPERBACK.name())
-                        .put(EventConfig.AUTHORS, new JsonArray())
+                        .put(EventConfig.CONTRIBUTORS, new JsonArray())
                 )
                 .collect(Collectors.toList());
     }
@@ -94,7 +94,7 @@ class AppTest {
     @Order(1)
     void testQueryNoData() {
         LOGGER.info("\nTEST QUERY EMPTY DATABASE ===========================================");
-        RestAssured.get("/data/authors")
+        RestAssured.get("/data/contributors")
                 .then().assertThat()
                 .statusCode(HttpResponseStatus.OK.code())
                 .and().body("$", hasSize(0));
@@ -106,14 +106,14 @@ class AppTest {
 
     @Test
     @Order(2)
-    void testAddAuthors() {
-        LOGGER.info("\nTEST ADD AUTHORS ====================================================");
-        for (AuthorData testCase : authors) {
+    void testAddContributors() {
+        LOGGER.info("\nTEST ADD CONTRIBUTORS ===============================================");
+        for (ContributorData testCase : contributors) {
             JsonObject payload = testCase.toPayload();
             // We add one author
             ValidatableResponse response = request()
                     .body(payload.encode())
-                    .post("/data/author")
+                    .post("/data/contributor")
                     .then().assertThat()
                     .statusCode(HttpResponseStatus.CREATED.code());
             testCase.setId(
@@ -128,19 +128,19 @@ class AppTest {
     @Order(3)
     void testUpdateBookData() {
         LOGGER.info("\nTEST UPDATE BOOK DATA ===============================================");
-        // Now that we got authors loaded in the DB and we know their IDs we can populate them into our test data
-        List<Integer> authorIds = authors
+        // Now that we got contributors loaded in the DB and we know their IDs we can populate them into our test data
+        List<Integer> contributorIds = contributors
                 .stream()
-                .map(AuthorData::getId)
+                .map(ContributorData::getId)
                 .collect(Collectors.toList());
 
-        books.get(0).getJsonArray(EventConfig.AUTHORS).add(authorIds.get(0));
-        books.get(1).getJsonArray(EventConfig.AUTHORS).add(authorIds.get(0)).add(authorIds.get(1));
-        books.get(2).getJsonArray(EventConfig.AUTHORS).add(authorIds.get(2));
-        books.get(3).getJsonArray(EventConfig.AUTHORS).add(authorIds.get(3));
-        books.get(4).getJsonArray(EventConfig.AUTHORS).add(authorIds.get(2)).add(authorIds.get(3));
+        books.get(0).getJsonArray(EventConfig.CONTRIBUTORS).add(contributorIds.get(0));
+        books.get(1).getJsonArray(EventConfig.CONTRIBUTORS).add(contributorIds.get(0)).add(contributorIds.get(1));
+        books.get(2).getJsonArray(EventConfig.CONTRIBUTORS).add(contributorIds.get(2));
+        books.get(3).getJsonArray(EventConfig.CONTRIBUTORS).add(contributorIds.get(3));
+        books.get(4).getJsonArray(EventConfig.CONTRIBUTORS).add(contributorIds.get(2)).add(contributorIds.get(3));
 
-        books.forEach(book -> Assertions.assertFalse(book.getJsonArray(EventConfig.AUTHORS).isEmpty()));
+        books.forEach(book -> Assertions.assertFalse(book.getJsonArray(EventConfig.CONTRIBUTORS).isEmpty()));
     }
 
     @Test
@@ -157,8 +157,8 @@ class AppTest {
                     .statusCode(HttpResponseStatus.CREATED.code())
                     // title is present
                     .and().body(EventConfig.TITLE, hasToString(title))
-                    // authors match what we sent
-                    .and().body(EventConfig.AUTHORS, hasSize(payload.getJsonArray(EventConfig.AUTHORS).size()))
+                    // contributors match what we sent
+                    .and().body(EventConfig.CONTRIBUTORS, hasSize(payload.getJsonArray(EventConfig.CONTRIBUTORS).size()))
                     // and we got an id
                     .and().body("$", hasKey(EventConfig.ID))
                     .extract().body().jsonPath().prettify();
@@ -183,22 +183,22 @@ class AppTest {
 
     @Test
     @Order(6)
-    void testQueryAuthors() {
-        LOGGER.info("\nTEST MATCH BOOK AUTHOR DATA =========================================");
-        // We check that the authors were added to the the DB
-        String responseBody = RestAssured.get("/data/authors")
+    void testQueryContributors() {
+        LOGGER.info("\nTEST MATCH BOOK CONTRIBUTOR DATA ====================================");
+        // We check that the contributors were added to the the DB
+        String responseBody = RestAssured.get("/data/contributors")
                 .then().assertThat()
                 .statusCode(HttpResponseStatus.OK.code())
-                .and().body("$", hasSize(authors.size()))
+                .and().body("$", hasSize(contributors.size()))
                 .extract().body().jsonPath().prettify();
-        LOGGER.info("Updating authors retrieved into test data");
-        // At this point the response should include the book information on each author as well
+        LOGGER.info("Updating contributors retrieved into test data");
+        // At this point the response should include the book information on each contributor as well
         JsonArray authorsResponse = new JsonArray(responseBody);
         // iterate over each element in the returned array
         Stream.iterate(0, n -> n + 1)
                 .limit(authorsResponse.size())
                 .map(authorsResponse::getJsonObject)
-                // and we match the author in the response to the one we have in test data
+                // and we match the contributor in the response to the one we have in test data
                 .forEach(AppTest::matchWithBook);
     }
 
@@ -207,7 +207,7 @@ class AppTest {
         LOGGER.info("\nTEST ENDPOINT NOT FOUND =============================================");
         RestAssured.given()
                 .accept("text/xml")
-                .get("/data/authors")
+                .get("/data/contributors")
                 .then().assertThat()
                 .statusCode(HttpResponseStatus.NOT_FOUND.code());
 
@@ -216,18 +216,18 @@ class AppTest {
                 .contentType("text/xml")
                 .accept(MediaTypes.APPLICATION_JSON)
                 .body("Nonsensicalauthordata")
-                .post("/data/author")
+                .post("/data/contributor")
                 .then().assertThat()
                 .statusCode(HttpResponseStatus.NOT_FOUND.code());
     }
 
     @Test
-    void testBadAuthorData() {
-        LOGGER.info("\nTEST BAD AUTHOR DATA ================================================");
+    void testBadContributorData() {
+        LOGGER.info("\nTEST BAD CONTRIBUTOR DATA ===========================================");
         JsonObject payload = new JsonObject().put("irrelevantKey", "irrelevantValue");
         request()
                 .body(payload.encode())
-                .post("/data/author")
+                .post("/data/contributor")
                 .then()
                 .statusCode(HttpResponseStatus.BAD_REQUEST.code())
                 .and().body("exception", hasToString(IllegalArgumentException.class.getName()));
@@ -246,12 +246,12 @@ class AppTest {
     }
 
     @Test
-    void testBookWithUnknownAuthor() {
-        LOGGER.info("\nTEST BOOK WITH UNKNOWN AUTHOR =======================================");
+    void testBookWithUnknownContributor() {
+        LOGGER.info("\nTEST BOOK WITH UNKNOWN CONTRIBUTOR =================================");
         JsonObject payload = new JsonObject()
                 .put(EventConfig.TITLE, "The Unknown")
                 .put(EventConfig.FORMAT, BookFormat.PAPERBACK.name())
-                .put(EventConfig.AUTHORS, new JsonArray().add(666));
+                .put(EventConfig.CONTRIBUTORS, new JsonArray().add(666));
         request()
                 .body(payload.encode())
                 .post("/data/book")
@@ -261,12 +261,12 @@ class AppTest {
     }
 
     @Test
-    void testBookWithOneMissingAuthor() {
-        LOGGER.info("\nTEST BOOK WITH ONE MISSING AUTHOR ===================================");
+    void testBookWithOneMissingContributor() {
+        LOGGER.info("\nTEST BOOK WITH ONE MISSING CONTRIBUTOR ==============================");
         JsonObject payload = new JsonObject()
                 .put(EventConfig.TITLE, "The Unknown")
                 .put(EventConfig.FORMAT, BookFormat.PAPERBACK.name())
-                .put(EventConfig.AUTHORS, new JsonArray().add(1).add(666));
+                .put(EventConfig.CONTRIBUTORS, new JsonArray().add(1).add(666));
         request()
                 .body(payload.encode())
                 .post("/data/book")
@@ -276,13 +276,13 @@ class AppTest {
     }
 
     @Test
-    void testDuplicateAuthors() {
-        LOGGER.info("\nTEST DUPLICATE AUTHOR NAMES =========================================");
+    void testDuplicateContributors() {
+        LOGGER.info("\nTEST DUPLICATE CONTRIBUTOR NAMES ====================================");
         Stream.of("Blake Victoria", "blake victoria", "BLAKE VICTORIA")
                 .map(duplicatedName -> new JsonObject().put(EventConfig.NAME, duplicatedName))
                 .forEach(payload -> request()
                         .body(payload.encode())
-                        .post("/data/author")
+                        .post("/data/contributor")
                         .then().assertThat()
                         .statusCode(HttpResponseStatus.CONFLICT.code())
                         .and().body("exception", hasToString(PersistenceException.class.getName()))
@@ -301,51 +301,51 @@ class AppTest {
                 .findFirst();
     }
 
-    private static void matchWithBook(JsonObject author) {
-        LOGGER.debug("Matching author:\n{}", author.encodePrettily());
+    private static void matchWithBook(JsonObject contributor) {
+        LOGGER.debug("Matching contributor:\n{}", contributor.encodePrettily());
 
-        Assertions.assertTrue(author.containsKey(EventConfig.BOOKS));
+        Assertions.assertTrue(contributor.containsKey(EventConfig.BOOKS));
 
         // from the DB
-        int authorId = author.getInteger(EventConfig.ID);
+        int contributorId = contributor.getInteger(EventConfig.ID);
 
         // from test data
-        boolean expectsBooks = authors.stream()
-                .filter(authorData -> authorData.getId() == authorId)
+        boolean expectsBooks = contributors.stream()
+                .filter(contributorData -> contributorData.getId() == contributorId)
                 .findFirst()
-                .map(authorData -> authorData.expectsBooks)
-                .orElseThrow(() -> new IllegalArgumentException("Unknown author with id " + authorId));
+                .map(contributorData -> contributorData.expectsBooks)
+                .orElseThrow(() -> new IllegalArgumentException("Unknown contributor with id " + contributorId));
 
         // If per test data we don't expect books on this author
         if (!expectsBooks) {
             // we check that effectively we didn't get books
-            Assertions.assertTrue(author.getJsonArray(EventConfig.BOOKS).isEmpty());
+            Assertions.assertTrue(contributor.getJsonArray(EventConfig.BOOKS).isEmpty());
             return;
         }
 
-        Assertions.assertFalse(author.getJsonArray(EventConfig.BOOKS).isEmpty());
+        Assertions.assertFalse(contributor.getJsonArray(EventConfig.BOOKS).isEmpty());
 
-        JsonArray authorBooks = author.getJsonArray(EventConfig.BOOKS);
+        JsonArray contributorBooks = contributor.getJsonArray(EventConfig.BOOKS);
 
         // Let's grab each book id in the author.books[] array
-        Disposable toDispose = Observable.range(0, authorBooks.size())
-                .map(authorBooks::getInteger)
+        Disposable toDispose = Observable.range(0, contributorBooks.size())
+                .map(contributorBooks::getInteger)
                 // we find the book based on its id
                 .map(bookId -> findById(books, bookId)
                         .orElseThrow(() -> new IllegalArgumentException(
-                                "No book found with id " + bookId + " for author with id: " + authorId
+                                "No book found with id " + bookId + " for contributor with id: " + contributorId
                         ))
                 )
-                // extract the authors
-                .map(book -> book.getJsonArray(EventConfig.AUTHORS))
+                // extract the contributors
+                .map(book -> book.getJsonArray(EventConfig.CONTRIBUTORS))
                 // check if the book contains the author
-                .filter(authorsInBook -> authorsInBook.contains(authorId))
+                .filter(contributorsInBook -> contributorsInBook.contains(contributorId))
                 .count()
                 .subscribe(
-                        validBooks -> Assertions.assertEquals((long) validBooks, authorBooks.size()),
+                        validBooks -> Assertions.assertEquals((long) validBooks, contributorBooks.size()),
                         error -> {
-                            LOGGER.error("Error matching author books", error);
-                            LOGGER.error(author.encodePrettily());
+                            LOGGER.error("Error matching contributor books", error);
+                            LOGGER.error(contributor.encodePrettily());
                             books.stream().map(JsonObject::encode).forEach(LOGGER::error);
                             Assertions.fail();
                         }

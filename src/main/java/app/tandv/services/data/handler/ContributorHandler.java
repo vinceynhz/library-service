@@ -1,8 +1,8 @@
-package app.tandv.services.handler;
+package app.tandv.services.data.handler;
 
 import app.tandv.services.configuration.EventConfig;
-import app.tandv.services.data.entity.AuthorEntity;
-import app.tandv.services.data.repository.AuthorsRepository;
+import app.tandv.services.data.entity.ContributorEntity;
+import app.tandv.services.data.repository.ContributorsRepository;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
@@ -17,21 +17,21 @@ import javax.persistence.EntityManager;
 /**
  * @author vic on 2020-07-21
  */
-public class AuthorsHandler extends AbstractDBHandler {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AuthorsHandler.class);
+public class ContributorHandler extends LibraryHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ContributorHandler.class);
 
-    public void authors(RoutingContext context) {
-        LOGGER.debug("Retrieving all authors from DB");
+    public void contributors(RoutingContext context) {
+        LOGGER.debug("Retrieving all contributors from DB");
         JsonObject event = context.get(EventConfig.EVENT);
         EntityManager entityManager = context.get(EventConfig.ENTITY_MANAGER);
-        AuthorsRepository repository = new AuthorsRepository(context.vertx(), entityManager);
+        ContributorsRepository repository = new ContributorsRepository(context.vertx(), entityManager);
 
         Disposable toDispose = repository.fetchAll()
-                .map(AuthorEntity::toJson)
+                .map(ContributorEntity::toJson)
                 .collect(JsonArray::new, JsonArray::add)
                 .map(JsonArray::encode)
-                .map(authors -> event
-                        .put(EventConfig.CONTENT, authors)
+                .map(contributors -> event
+                        .put(EventConfig.CONTENT, contributors)
                         .put(EventConfig.STATUS, HttpResponseStatus.OK.code())
                 )
                 .subscribe(
@@ -42,30 +42,30 @@ public class AuthorsHandler extends AbstractDBHandler {
     }
 
     public void add(RoutingContext context) {
-        LOGGER.debug("Adding author to DB");
+        LOGGER.debug("Adding contributor to DB");
         JsonObject event = context.get(EventConfig.EVENT);
         JsonObject body = context.getBodyAsJson();
         EntityManager entityManager = context.get(EventConfig.ENTITY_MANAGER);
-        AuthorsRepository repository = new AuthorsRepository(context.vertx(), entityManager);
+        ContributorsRepository repository = new ContributorsRepository(context.vertx(), entityManager);
 
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace(body.encode());
         }
 
-        // To add authors we actually need a whole transaction so we can get entities in managed state
+        // To add contributors we actually need a whole transaction so we can get entities in managed state
         entityManager.getTransaction().begin();
 
-        // Get the new author entity to build
+        // Get the new contributor entity to build
         Disposable toDispose = Single.just(body)
-                .map(AuthorEntity::fromJson)
+                .map(ContributorEntity::fromJson)
                 // Save it
                 .map(repository::add)
                 // Make it nice looking for the response
-                .map(AuthorEntity::toJson)
+                .map(ContributorEntity::toJson)
                 .map(JsonObject::encode)
                 // Put it in the response
-                .map(author -> event
-                        .put(EventConfig.CONTENT, author)
+                .map(contributor -> event
+                        .put(EventConfig.CONTENT, contributor)
                         .put(EventConfig.STATUS, HttpResponseStatus.CREATED.code())
                 )
                 // Materialize everything
