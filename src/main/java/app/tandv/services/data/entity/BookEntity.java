@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.persistence.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Notes on book entities:
@@ -20,10 +21,27 @@ import java.util.*;
  * {@link StringUtils#titleCase(String)}.
  *
  * <strong>Ordering</strong>
- * The string used for alphabetical ordering will be determined according to the rules defined in
+ * The string used for alphabetical cataloguing will be determined according to the rules defined in
  * {@link StringUtils#titleForOrdering(String)}.
  * <p>
- * Please note that two or more books may yield the same ordering value:
+ * Please note that two or more books may yield the same cataloguing value:
+ * - The Dream Interpretation
+ * - Dream Interpretation
+ * <p>
+ * Above titles will be ordered both under <em>dream interpretation</em>
+ *
+ * <strong>Uniqueness</strong>
+ * A book's uniqueness should be identified by the title in appropriate case as defined by
+ * {@link StringUtils::titleCase} normalization as well as by the contributors for that particular book. There is a
+ * perfectly reasonable case in which two books by two different contributors may share the same title. For example:
+ * - The Outsider by Stephen King
+ * - The Outsider by Richard Wright
+ *
+ * In the same sense, and perhaps in more common scenarios, the books are also unique considering their format, for
+ * example the paperback and hardback version of the same book should be
+ * <p>
+ * Thus, upon book creation the sha56 signature cannot be determined immediately, it is only after contributors have been
+ * fully added to the book that the sha will be calculated. In order to prevent issues while coding,
  *
  * @author vic on 2018-08-28
  */
@@ -33,20 +51,20 @@ import java.util.*;
 @NamedQueries({
         @NamedQuery(
                 name = "BookEntity.findAll",
-                query = "SELECT DISTINCT b FROM BookEntity b LEFT OUTER JOIN FETCH b.authors"
+                query = "SELECT DISTINCT b FROM BookEntity b LEFT OUTER JOIN FETCH b.contributors"
         ),
         @NamedQuery(
                 name = "BookEntity.findAllById",
-                query = "SELECT DISTINCT b FROM BookEntity b LEFT OUTER JOIN FETCH b.authors WHERE b.id IN :ids"
+                query = "SELECT DISTINCT b FROM BookEntity b LEFT OUTER JOIN FETCH b.contributors WHERE b.id IN :ids"
         )
 })
-public class BookEntity extends AbstractEntity<BookEntity> {
+public class BookEntity extends LibraryEntity<BookEntity> {
     private static final Logger LOGGER = LoggerFactory.getLogger(BookEntity.class);
 
     private static final Set<String> REQUIRED_FIELDS = new FluentHashSet<String>()
             .thenAdd(EventConfig.TITLE)
             .thenAdd(EventConfig.FORMAT)
-            .thenAdd(EventConfig.AUTHORS);
+            .thenAdd(EventConfig.CONTRIBUTORS);
 
     public BookEntity() {
         super(BookEntity.class);
@@ -63,20 +81,15 @@ public class BookEntity extends AbstractEntity<BookEntity> {
                 .titleCase(rawTitle)
                 .orElseThrow(() -> new IllegalArgumentException("Unable to generate title case for title [" + rawTitle + "]"));
         String ordering = StringUtils
-                .authorForOrdering(rawTitle)
-                .orElseThrow(() -> new IllegalArgumentException("Unable to generate ordering string for title [" + rawTitle + "]"));
-        String sha256 = StringUtils
-                .sha256(cleanTitle)
-                .orElseThrow(() -> new IllegalArgumentException("Unable to generate SHA 256 for title [" + cleanTitle + "]"));
+                .contributorForOrdering(rawTitle)
+                .orElseThrow(() -> new IllegalArgumentException("Unable to generate cataloguing string for title [" + rawTitle + "]"));
         BookEntity entity = new BookEntity()
                 .withFormat(format)
                 .withTitle(cleanTitle)
-                .withOrdering(ordering)
-                .withSha256(sha256);
+                .withCataloguing(ordering);
 
         Optional.ofNullable(data.getString(EventConfig.ISBN)).ifPresent(entity::setIsbn);
         Optional.ofNullable(data.getString(EventConfig.YEAR)).ifPresent(entity::setYear);
-        Optional.ofNullable(data.getInteger(EventConfig.PAGES)).map(Integer::shortValue).ifPresent(entity::setPages);
 
         return entity;
     }
@@ -90,22 +103,22 @@ public class BookEntity extends AbstractEntity<BookEntity> {
     @Column(name = EventConfig.YEAR, length = 4)
     private String year;
 
+    @Column(name = EventConfig.LANGUAGE, length = 5)
+    private String language;
+
     @Column(name = EventConfig.FORMAT, nullable = false, length = 12)
     @Enumerated(EnumType.STRING)
     private BookFormat format;
-
-    @Column(name = EventConfig.PAGES)
-    private Short pages;
 
     @ManyToMany(cascade = {
             CascadeType.PERSIST,
             CascadeType.MERGE
     })
-    @JoinTable(name = "book_author",
+    @JoinTable(name = "book_contributor",
             joinColumns = @JoinColumn(name = "book_id"),
-            inverseJoinColumns = @JoinColumn(name = "author_id")
+            inverseJoinColumns = @JoinColumn(name = "contributor_id")
     )
-    private Set<AuthorEntity> authors = new HashSet<>();
+    private Set<ContributorEntity> contributors = new HashSet<>();
 
     public String getTitle() {
         return title;
@@ -159,47 +172,67 @@ public class BookEntity extends AbstractEntity<BookEntity> {
         return this;
     }
 
-    public Short getPages() {
-        return pages;
+    public String getLanguage() {
+        return language;
     }
 
-    public void setPages(Short pages) {
-        this.pages = pages;
+    public void setLanguage(String language) {
+        this.language = language;
     }
 
-    public BookEntity withPages(Short pages) {
-        this.pages = pages;
+    public BookEntity withLanguage(String language){
+        this.language = language;
         return this;
     }
 
-    public Set<AuthorEntity> getAuthors() {
-        return authors;
+    public Set<ContributorEntity> getContributors() {
+        return contributors;
     }
 
-    public void setAuthors(Set<AuthorEntity> authors) {
-        this.authors = authors;
+    public void setContributors(Set<ContributorEntity> contributors) {
+        this.contributors = contributors;
     }
 
-    public BookEntity withAuthors(Set<AuthorEntity> authors) {
-        this.authors = authors;
+    public BookEntity withContributors(Set<ContributorEntity> contributors) {
+        this.contributors = contributors;
         return this;
     }
 
-    public void addAuthor(AuthorEntity author) {
-        this.authors.add(author);
-        author.getBooks().add(this);
+    public void addContributor(ContributorEntity contributor) {
+        this.contributors.add(contributor);
+        contributor.getBooks().add(this);
     }
 
-    public void removeAuthor(AuthorEntity author) {
-        authors.remove(author);
-        author.getBooks().remove(this);
+    public void removeContributor(ContributorEntity contributor) {
+        contributors.remove(contributor);
+        contributor.getBooks().remove(this);
     }
 
     public void clearAuthors() {
-        // We remove the references to this book from all authors
-        authors.forEach(authorEntity -> authorEntity.getBooks().remove(this));
-        // Then we remove the authors from this book
-        authors.clear();
+        // We remove the references to this book from all contributors
+        contributors.forEach(contributorEntity -> contributorEntity.getBooks().remove(this));
+        // Then we remove the contributors from this book
+        contributors.clear();
+    }
+
+    /**
+     * This method will take the title (after construction the title is already in proper casing), and the sha256
+     * signature for each contributor and concatenate them to create the book's sha256.
+     * <p>
+     * This is done in order to identify books with the same title.
+     *
+     * @return a reference to this instance for fluent API
+     */
+    public BookEntity calculateSha256() {
+        if (this.getContributors().isEmpty()) {
+            throw new IllegalArgumentException("No contributor information to determine book sha256 signature");
+        }
+        String authorsSha256 = this.getContributors().stream()
+                .map(ContributorEntity::getSha256)
+                .collect(Collectors.joining(StringUtils.WORD_SEPARATOR));
+        String bookSha256 = StringUtils.sha256(this.title + StringUtils.WORD_SEPARATOR + authorsSha256)
+                .orElseThrow(() -> new IllegalArgumentException("Unable to generate SHA 256 for title [" + this.title + "]"));
+        return this.withSha256(bookSha256);
     }
 
     @Override
@@ -221,27 +254,27 @@ public class BookEntity extends AbstractEntity<BookEntity> {
                 EventConfig.ID + "=" + id +
                 ", " + EventConfig.SHA_256 + "='" + this.sha256 + '\'' +
                 ", " + EventConfig.TITLE + "='" + title + '\'' +
-                ", " + EventConfig.ORDERING + "='" + this.ordering + '\'' +
+                ", " + EventConfig.CATALOGUING + "='" + this.cataloguing + '\'' +
                 ", " + EventConfig.ISBN + "='" + isbn + '\'' +
                 ", " + EventConfig.YEAR + "='" + year + '\'' +
                 ", " + EventConfig.FORMAT + "=" + format +
-                ", " + EventConfig.AUTHORS + "=" + authors.size() +
+                ", " + EventConfig.CONTRIBUTORS + "=" + contributors.size() +
                 '}';
     }
 
     @Override
     public JsonObject toJson() {
-        JsonArray authorIds = authors.stream()
-                .map(AuthorEntity::getId)
+        JsonArray contributorIds = contributors.stream()
+                .map(ContributorEntity::getId)
                 .collect(JsonArray::new, JsonArray::add, JsonArray::addAll);
         return new JsonObject()
                 .put(EventConfig.ID, this.id)
                 .put(EventConfig.SHA_256, this.sha256)
                 .put(EventConfig.TITLE, this.title)
-                .put(EventConfig.ORDERING, this.ordering)
+                .put(EventConfig.CATALOGUING, this.cataloguing)
                 .put(EventConfig.ISBN, this.isbn)
                 .put(EventConfig.YEAR, this.year)
                 .put(EventConfig.FORMAT, this.format.name())
-                .put(EventConfig.AUTHORS, authorIds);
+                .put(EventConfig.CONTRIBUTORS, contributorIds);
     }
 }

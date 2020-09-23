@@ -1,8 +1,8 @@
-package app.tandv.services.handler;
+package app.tandv.services.data.handler;
 
 import app.tandv.services.configuration.EventConfig;
 import app.tandv.services.data.entity.BookEntity;
-import app.tandv.services.data.repository.AuthorsRepository;
+import app.tandv.services.data.repository.ContributorsRepository;
 import app.tandv.services.data.repository.BooksRepository;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.Single;
@@ -19,7 +19,7 @@ import javax.persistence.EntityManager;
 /**
  * @author vic on 2020-07-21
  */
-public class BooksHandler extends AbstractDBHandler {
+public class BooksHandler extends LibraryHandler {
     private static final Logger LOGGER = LoggerFactory.getLogger(BooksHandler.class);
 
     /**
@@ -61,7 +61,7 @@ public class BooksHandler extends AbstractDBHandler {
 
         EntityManager entityManager = context.get(EventConfig.ENTITY_MANAGER);
         BooksRepository booksRepository = new BooksRepository(vertx, entityManager);
-        AuthorsRepository authorsRepository = new AuthorsRepository(vertx, entityManager);
+        ContributorsRepository contributorsRepository = new ContributorsRepository(vertx, entityManager);
 
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace(body.encode());
@@ -73,13 +73,15 @@ public class BooksHandler extends AbstractDBHandler {
         entityManager.getTransaction().begin();
 
         Disposable toDispose = Single.just(body)
-                .filter(b -> b.containsKey(EventConfig.AUTHORS))
-                .map(b -> b.getJsonArray(EventConfig.AUTHORS))
+                .filter(b -> b.containsKey(EventConfig.CONTRIBUTORS))
+                .map(b -> b.getJsonArray(EventConfig.CONTRIBUTORS))
                 .map(authors -> this.unwrapJsonArray(authors, JsonArray::getLong))
-                // Find all the authors with those ids
-                .flatMapObservable(authorsRepository::fetchAllById)
+                // Find all the contributors with those ids
+                .flatMapObservable(contributorsRepository::fetchAllById)
                 // And add them to the book entity, if the book entity fails the whole thing fails
-                .collect(() -> BookEntity.fromJson(body), BookEntity::addAuthor)
+                .collect(() -> BookEntity.fromJson(body), BookEntity::addContributor)
+                // After adding books, then we set the sha 256
+                .map(BookEntity::calculateSha256)
                 // Save the book entity
                 .map(booksRepository::add)
                 // Make it nice looking for the response

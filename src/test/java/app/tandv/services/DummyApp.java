@@ -1,6 +1,6 @@
 package app.tandv.services;
 
-import app.tandv.services.data.entity.AuthorEntity;
+import app.tandv.services.data.entity.ContributorEntity;
 import app.tandv.services.data.entity.BookEntity;
 import app.tandv.services.data.jpa.DummyJpaEntityManagerFactory;
 import app.tandv.services.verticle.ServiceVerticle;
@@ -38,7 +38,7 @@ class DummyApp extends App {
                     new DummyJpaEntityManagerFactory(
                             config,
                             BookEntity.class,
-                            AuthorEntity.class
+                            ContributorEntity.class
                     ).getFactory()
             );
         } catch (Throwable exception) {

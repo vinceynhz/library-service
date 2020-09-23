@@ -1,6 +1,6 @@
 package app.tandv.services.data.repository;
 
-import app.tandv.services.data.entity.AbstractEntity;
+import app.tandv.services.data.entity.LibraryEntity;
 import app.tandv.services.exception.PartialResultException;
 import io.reactivex.Observable;
 import io.vertx.reactivex.core.Vertx;
@@ -20,14 +20,14 @@ import javax.persistence.PersistenceException;
  *
  * @author vic on 2018-09-26
  */
-public abstract class LibraryRepository<T extends AbstractEntity> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AuthorsRepository.class);
+public abstract class LibraryRepository<T extends LibraryEntity> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(ContributorsRepository.class);
 
     private final EntityManager entityManager;
     private final Class<T> type;
     private final Vertx vertx;
 
-    // Technically this could exist for any entity matching all criteria of AbstractEntity
+    // Technically this could exist for any entity matching all criteria of LibraryEntity
     LibraryRepository(Class<T> type, Vertx vertx, EntityManager entityManager) {
         this.type = type;
         this.vertx = vertx;

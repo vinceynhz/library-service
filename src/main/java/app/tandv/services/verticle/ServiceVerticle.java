@@ -2,8 +2,8 @@ package app.tandv.services.verticle;
 
 import app.tandv.services.configuration.EventConfig;
 import app.tandv.services.configuration.MediaTypes;
-import app.tandv.services.handler.AuthorsHandler;
-import app.tandv.services.handler.BooksHandler;
+import app.tandv.services.data.handler.ContributorHandler;
+import app.tandv.services.data.handler.BooksHandler;
 import app.tandv.services.handler.RequestHandler;
 import app.tandv.services.handler.ResponseHandler;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -85,7 +85,7 @@ public class ServiceVerticle extends AbstractVerticle {
      */
     private Router getDataApi() {
         BooksHandler booksHandler = new BooksHandler();
-        AuthorsHandler authorsHandler = new AuthorsHandler();
+        ContributorHandler contributorHandler = new ContributorHandler();
         Router router = Router.router(this.vertx);
         // all happy paths
         router.get("/books")
@@ -103,19 +103,19 @@ public class ServiceVerticle extends AbstractVerticle {
                 .handler(booksHandler::add)
                 .handler(this::releaseEntityManager)
                 .handler(this.responseHandler);
-        router.get("/authors")
+        router.get("/contributors")
                 .produces(MediaTypes.APPLICATION_JSON)
                 .handler(this.requestHandler)
                 .handler(this::addEntityManager)
-                .handler(authorsHandler::authors)
+                .handler(contributorHandler::contributors)
                 .handler(this::releaseEntityManager)
                 .handler(this.responseHandler);
-        router.post("/author")
+        router.post("/contributor")
                 .produces(MediaTypes.APPLICATION_JSON)
                 .consumes(MediaTypes.APPLICATION_JSON)
                 .handler(this.requestHandler)
                 .handler(this::addEntityManager)
-                .handler(authorsHandler::add)
+                .handler(contributorHandler::add)
                 .handler(this::releaseEntityManager)
                 .handler(this.responseHandler);
         return router;

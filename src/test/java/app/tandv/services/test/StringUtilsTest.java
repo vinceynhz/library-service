@@ -89,7 +89,7 @@ class StringUtilsTest {
         };
 
         for (TestCase testCase : testCases) {
-            testCase.validate(StringUtils::authorForOrdering);
+            testCase.validate(StringUtils::contributorForOrdering);
         }
     }
 

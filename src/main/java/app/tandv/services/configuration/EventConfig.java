@@ -20,7 +20,7 @@ public final class EventConfig {
     // Entity related keys: aka those used by the database entities
     public static final String ID = "id";
     public static final String SHA_256 = "sha256";
-    public static final String ORDERING = "ordering";
+    public static final String CATALOGUING = "cataloguing";
 
     // Author fields
     public static final String NAME = "name";
@@ -30,7 +30,7 @@ public final class EventConfig {
     public static final String TITLE = "title";
     public static final String ISBN = "isbn";
     public static final String YEAR = "year";
+    public static final String LANGUAGE = "language";
     public static final String FORMAT = "format";
-    public static final String PAGES = "pages";
-    public static final String AUTHORS = "authors";
+    public static final String CONTRIBUTORS = "contributors";
 }
