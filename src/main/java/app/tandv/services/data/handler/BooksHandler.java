@@ -2,8 +2,10 @@ package app.tandv.services.data.handler;
 
 import app.tandv.services.configuration.EventConfig;
 import app.tandv.services.data.entity.BookEntity;
+import app.tandv.services.data.entity.ContributorType;
 import app.tandv.services.data.repository.ContributorsRepository;
 import app.tandv.services.data.repository.BooksRepository;
+import app.tandv.services.util.collections.Pair;
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
@@ -15,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.persistence.EntityManager;
+import java.util.stream.Collectors;
 
 /**
  * @author vic on 2020-07-21
@@ -75,9 +78,19 @@ public class BooksHandler extends LibraryHandler {
         Disposable toDispose = Single.just(body)
                 .filter(b -> b.containsKey(EventConfig.CONTRIBUTORS))
                 .map(b -> b.getJsonArray(EventConfig.CONTRIBUTORS))
-                .map(authors -> this.unwrapJsonArray(authors, JsonArray::getLong))
-                // Find all the contributors with those ids
-                .flatMapObservable(contributorsRepository::fetchAllById)
+                // convert the arrays into a map
+                .map(contributorsArray -> contributorsArray.stream()
+                        .filter(object -> object instanceof JsonObject)
+                        .map(JsonObject.class::cast)
+                        .collect(Collectors.toMap(
+                                json -> json.getLong(EventConfig.ID),
+                                json -> ContributorType.fromString(json.getString(EventConfig.TYPE))
+                        ))
+                )
+                .flatMapObservable(contributorsMap -> contributorsRepository
+                        .fetchAllById(contributorsMap.keySet())
+                        .map(entity -> new Pair<>(entity, contributorsMap.get(entity.getId())))
+                )
                 // And add them to the book entity, if the book entity fails the whole thing fails
                 .collect(() -> BookEntity.fromJson(body), BookEntity::addContributor)
                 // After adding books, then we set the sha 256

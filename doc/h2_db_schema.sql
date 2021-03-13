@@ -5,7 +5,7 @@ drop table if exists CONTRIBUTOR_ALIAS;
 
 create table CONTRIBUTOR
 (
-	ID IDENTITY primary key,
+	ID LONG primary key,
   SHA256 VARCHAR(64) unique not null,
 	NAME VARCHAR(255) not null,
   CATALOGUING VARCHAR(255) not null
@@ -14,7 +14,7 @@ create table CONTRIBUTOR
 
 create table BOOK
 (
-	ID IDENTITY primary key,
+	ID LONG primary key,
   SHA256 VARCHAR(64) unique not null,
 	TITLE VARCHAR(255) not null,
   CATALOGUING VARCHAR(255) not null,
@@ -30,6 +30,7 @@ create table BOOK_CONTRIBUTOR
 (
 	BOOK_ID LONG not null,
 	CONTRIBUTOR_ID LONG not null,
+	TYPE VARCHAR(12) not null,
 	constraint BOOK_CONTRIBUTOR_CONTRIBUTOR_ID_FK
 		foreign key (CONTRIBUTOR_ID) references CONTRIBUTOR,
 	constraint BOOK_CONTRIBUTOR_BOOK_ID_FK

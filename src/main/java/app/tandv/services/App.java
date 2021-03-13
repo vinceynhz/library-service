@@ -1,5 +1,6 @@
 package app.tandv.services;
 
+import app.tandv.services.data.entity.BookContributor;
 import app.tandv.services.data.entity.ContributorEntity;
 import app.tandv.services.data.entity.BookEntity;
 import app.tandv.services.data.jpa.JpaEntityManagerFactory;
@@ -108,7 +109,8 @@ public class App {
                     new JpaEntityManagerFactory(
                             config,
                             BookEntity.class,
-                            ContributorEntity.class
+                            ContributorEntity.class,
+                            BookContributor.class
                     ).getFactory()
             );
         } catch (Throwable exception) {

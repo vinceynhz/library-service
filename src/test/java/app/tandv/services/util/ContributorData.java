@@ -51,11 +51,11 @@ public final class ContributorData {
         return response
                 // we got an id
                 .and().body("$", hasKey(EventConfig.ID))
-                // author has all expected values
+                // contributor has all expected values
                 .and().body(EventConfig.NAME, hasToString(this.expectedName))
                 .and().body(EventConfig.CATALOGUING, hasToString(this.expectedOrdering))
                 .and().body(EventConfig.SHA_256, hasToString(this.expectedSha256))
                 // and no books are present
-                .and().body(EventConfig.BOOKS, hasSize(0));
+                .and().body(EventConfig.CONTRIBUTIONS, hasSize(0));
     }
 }

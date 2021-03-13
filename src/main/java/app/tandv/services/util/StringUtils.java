@@ -101,7 +101,7 @@ public final class StringUtils {
                 .map(normalized -> normalized.split(WORD_SEPARATOR))
                 // convert to fluent array list
                 .map(FluentArrayList::new)
-                // remove all non invalid words for an author ordering
+                // remove all non invalid words for an contributor ordering
                 .map(words -> words.thenRemoveIf(StringUtils.INVALID_AUTHOR_WORD))
                 // swap first to last word
                 .map(words -> words.swap(0, -1))

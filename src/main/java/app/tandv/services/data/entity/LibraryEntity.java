@@ -17,11 +17,10 @@ import javax.persistence.*;
  *
  * @author vic on 2018-09-26
  */
-@SuppressWarnings({"unused", "WeakerAccess"})
+@SuppressWarnings({"unused"})
 @MappedSuperclass
 public abstract class LibraryEntity<T> {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Long id;
 
     @Column(name = EventConfig.SHA_256, unique = true, nullable = false)
@@ -31,10 +30,10 @@ public abstract class LibraryEntity<T> {
     String cataloguing;
 
     @Transient
-    private final Class<T> subtype;
+    private final Class<T> type;
 
-    LibraryEntity(Class<T> subtype) {
-        this.subtype = subtype;
+    LibraryEntity(Class<T> type) {
+        this.type = type;
     }
 
     public Long getId() {
@@ -45,10 +44,9 @@ public abstract class LibraryEntity<T> {
         this.id = id;
     }
 
-    public T withId(Long id) {
-        this.id = id;
-
-        return subtype.cast(this);
+    T withGeneratedId() {
+        this.id = System.currentTimeMillis();
+        return type.cast(this);
     }
 
     public String getSha256() {
@@ -59,9 +57,9 @@ public abstract class LibraryEntity<T> {
         this.sha256 = sha256;
     }
 
-    public T withSha256(String sha256) {
+    T withSha256(String sha256) {
         this.sha256 = sha256;
-        return subtype.cast(this);
+        return type.cast(this);
     }
 
     public String getCataloguing() {
@@ -72,9 +70,9 @@ public abstract class LibraryEntity<T> {
         this.cataloguing = cataloguing;
     }
 
-    public T withCataloguing(String ordering) {
+    T withCataloguing(String ordering) {
         this.cataloguing = ordering;
-        return subtype.cast(this);
+        return type.cast(this);
     }
 
     public abstract JsonObject toJson();

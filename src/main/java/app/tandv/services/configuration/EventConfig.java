@@ -22,9 +22,9 @@ public final class EventConfig {
     public static final String SHA_256 = "sha256";
     public static final String CATALOGUING = "cataloguing";
 
-    // Author fields
+    // Contributor fields
     public static final String NAME = "name";
-    public static final String BOOKS = "books";
+    public static final String CONTRIBUTIONS = "contributions";
 
     // Book fields
     public static final String TITLE = "title";
@@ -33,4 +33,7 @@ public final class EventConfig {
     public static final String LANGUAGE = "language";
     public static final String FORMAT = "format";
     public static final String CONTRIBUTORS = "contributors";
+
+    // BookContributor fields
+    public static final String TYPE = "type";
 }
