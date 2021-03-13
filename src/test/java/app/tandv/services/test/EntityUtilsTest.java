@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 
 
 /**
- * @author Vic on 8/31/2018
+ * @author vic on 8/31/2018
  **/
 class EntityUtilsTest {
     @Test

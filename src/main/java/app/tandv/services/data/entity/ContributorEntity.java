@@ -47,11 +47,15 @@ import java.util.Set;
 @NamedQueries({
         @NamedQuery(
                 name = "ContributorEntity.findAll",
-                query = "SELECT DISTINCT a FROM ContributorEntity a LEFT OUTER JOIN FETCH a.books"
+                query = "SELECT DISTINCT a FROM ContributorEntity a LEFT OUTER JOIN FETCH a.contributions"
         ),
         @NamedQuery(
                 name = "ContributorEntity.findAllById",
                 query = "SELECT DISTINCT a FROM ContributorEntity a WHERE a.id IN :ids"
+        ),
+        @NamedQuery(
+                name = "ContributorEntity.findById",
+                query = "SELECT DISTINCT a FROM ContributorEntity a WHERE a.id = :id"
         )
 })
 public class ContributorEntity extends LibraryEntity<ContributorEntity> {
@@ -61,9 +65,8 @@ public class ContributorEntity extends LibraryEntity<ContributorEntity> {
     @Column(name = EventConfig.NAME, nullable = false)
     private String name;
 
-    // This maps to the field in the BookEntity class, not to the table
-    @ManyToMany(mappedBy = EventConfig.CONTRIBUTORS)
-    private Set<BookEntity> books = new HashSet<>();
+    @OneToMany(mappedBy = "contributor")
+    private Set<BookContributor> contributions;
 
     public ContributorEntity() {
         super(ContributorEntity.class);
@@ -75,7 +78,7 @@ public class ContributorEntity extends LibraryEntity<ContributorEntity> {
         }
         String rawName = data.getString(EventConfig.NAME);
         String normalized = StringUtils
-                .titleCase(rawName, true) // for author names we need to handle upper case
+                .titleCase(rawName, true) // for contributor names we need to handle upper case
                 .orElseThrow(() -> new IllegalArgumentException("Unable to generate title case for name [" + rawName + "]"));
         String ordering = StringUtils
                 .contributorForOrdering(rawName)
@@ -85,6 +88,7 @@ public class ContributorEntity extends LibraryEntity<ContributorEntity> {
                 .orElseThrow(() -> new IllegalArgumentException("Unable to generate SHA 256 for name [" + normalized + "]"));
 
         return new ContributorEntity()
+                .withGeneratedId()
                 .withName(normalized)
                 .withCataloguing(ordering)
                 .withSha256(sha256);
@@ -103,17 +107,15 @@ public class ContributorEntity extends LibraryEntity<ContributorEntity> {
         return this;
     }
 
-    public Set<BookEntity> getBooks() {
-        return books;
+    public Set<BookContributor> getContributions() {
+        if (this.contributions == null) {
+            this.contributions = new HashSet<>();
+        }
+        return contributions;
     }
 
-    public void setBooks(Set<BookEntity> books) {
-        this.books = books;
-    }
-
-    public ContributorEntity withBooks(Set<BookEntity> books) {
-        this.books = books;
-        return this;
+    public void addContribution(BookContributor contribution) {
+        this.getContributions().add(contribution);
     }
 
     @Override
@@ -136,20 +138,21 @@ public class ContributorEntity extends LibraryEntity<ContributorEntity> {
                 ", " + EventConfig.SHA_256 + "='" + this.sha256 + '\'' +
                 ", " + EventConfig.NAME + "='" + this.name + '\'' +
                 ", " + EventConfig.CATALOGUING + "='" + this.cataloguing + '\'' +
-                ", " + EventConfig.BOOKS + "=" + this.books.size() +
+                ", " + EventConfig.CONTRIBUTIONS + "=" + this.contributions.size() +
                 '}';
     }
 
     @Override
     public JsonObject toJson() {
-        JsonArray bookIds = books.stream()
-                .map(BookEntity::getId)
+        JsonArray contributions = this.getContributions().stream()
+                .map(BookContributor::toContributionJson)
                 .collect(JsonArray::new, JsonArray::add, JsonArray::addAll);
         return new JsonObject()
                 .put(EventConfig.ID, this.id)
                 .put(EventConfig.SHA_256, this.sha256)
                 .put(EventConfig.NAME, this.name)
                 .put(EventConfig.CATALOGUING, this.cataloguing)
-                .put(EventConfig.BOOKS, bookIds);
+                .put(EventConfig.CONTRIBUTIONS, contributions)
+                ;
     }
 }

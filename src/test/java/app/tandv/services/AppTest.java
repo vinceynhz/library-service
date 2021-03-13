@@ -34,7 +34,7 @@ import static org.hamcrest.Matchers.*;
 /**
  * Unit test for simple App.
  *
- * @author Vic on 8/28/2018
+ * @author vic on 8/28/2018
  */
 @TestMethodOrder(OrderAnnotation.class)
 class AppTest {
@@ -110,7 +110,7 @@ class AppTest {
         LOGGER.info("\nTEST ADD CONTRIBUTORS ===============================================");
         for (ContributorData testCase : contributors) {
             JsonObject payload = testCase.toPayload();
-            // We add one author
+            // We add one contributor
             ValidatableResponse response = request()
                     .body(payload.encode())
                     .post("/data/contributor")
@@ -146,7 +146,7 @@ class AppTest {
     @Test
     @Order(4)
     void testAddBooks() {
-        LOGGER.info("\nTEST ADD BOOKS ======================================================");
+        LOGGER.info("\nTEST ADD CONTRIBUTIONS ======================================================");
         String title;
         for (JsonObject payload : books) {
             title = payload.getString(EventConfig.TITLE);
@@ -170,7 +170,7 @@ class AppTest {
     @Test
     @Order(5)
     void testQueryBooks() {
-        LOGGER.info("\nTEST QUERY BOOKS ====================================================");
+        LOGGER.info("\nTEST QUERY CONTRIBUTIONS ====================================================");
         // We check that the books were added to the the DB
         RestAssured.get("/data/books")
                 .then().assertThat()
@@ -193,11 +193,11 @@ class AppTest {
                 .extract().body().jsonPath().prettify();
         LOGGER.info("Updating contributors retrieved into test data");
         // At this point the response should include the book information on each contributor as well
-        JsonArray authorsResponse = new JsonArray(responseBody);
+        JsonArray contributorsResponse = new JsonArray(responseBody);
         // iterate over each element in the returned array
         Stream.iterate(0, n -> n + 1)
-                .limit(authorsResponse.size())
-                .map(authorsResponse::getJsonObject)
+                .limit(contributorsResponse.size())
+                .map(contributorsResponse::getJsonObject)
                 // and we match the contributor in the response to the one we have in test data
                 .forEach(AppTest::matchWithBook);
     }
@@ -304,7 +304,7 @@ class AppTest {
     private static void matchWithBook(JsonObject contributor) {
         LOGGER.debug("Matching contributor:\n{}", contributor.encodePrettily());
 
-        Assertions.assertTrue(contributor.containsKey(EventConfig.BOOKS));
+        Assertions.assertTrue(contributor.containsKey(EventConfig.CONTRIBUTIONS));
 
         // from the DB
         int contributorId = contributor.getInteger(EventConfig.ID);
@@ -316,18 +316,18 @@ class AppTest {
                 .map(contributorData -> contributorData.expectsBooks)
                 .orElseThrow(() -> new IllegalArgumentException("Unknown contributor with id " + contributorId));
 
-        // If per test data we don't expect books on this author
+        // If per test data we don't expect books on this contributor
         if (!expectsBooks) {
             // we check that effectively we didn't get books
-            Assertions.assertTrue(contributor.getJsonArray(EventConfig.BOOKS).isEmpty());
+            Assertions.assertTrue(contributor.getJsonArray(EventConfig.CONTRIBUTIONS).isEmpty());
             return;
         }
 
-        Assertions.assertFalse(contributor.getJsonArray(EventConfig.BOOKS).isEmpty());
+        Assertions.assertFalse(contributor.getJsonArray(EventConfig.CONTRIBUTIONS).isEmpty());
 
-        JsonArray contributorBooks = contributor.getJsonArray(EventConfig.BOOKS);
+        JsonArray contributorBooks = contributor.getJsonArray(EventConfig.CONTRIBUTIONS);
 
-        // Let's grab each book id in the author.books[] array
+        // Let's grab each book id in the contributor.books[] array
         Disposable toDispose = Observable.range(0, contributorBooks.size())
                 .map(contributorBooks::getInteger)
                 // we find the book based on its id
@@ -338,7 +338,7 @@ class AppTest {
                 )
                 // extract the contributors
                 .map(book -> book.getJsonArray(EventConfig.CONTRIBUTORS))
-                // check if the book contains the author
+                // check if the book contains the contributor
                 .filter(contributorsInBook -> contributorsInBook.contains(contributorId))
                 .count()
                 .subscribe(

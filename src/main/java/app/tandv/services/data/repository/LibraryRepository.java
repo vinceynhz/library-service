@@ -2,6 +2,7 @@ package app.tandv.services.data.repository;
 
 import app.tandv.services.data.entity.LibraryEntity;
 import app.tandv.services.exception.PartialResultException;
+import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.vertx.reactivex.core.Vertx;
 import org.slf4j.Logger;
@@ -90,6 +91,23 @@ public abstract class LibraryRepository<T extends LibraryEntity> {
         );
     }
 
+    public Maybe<T> fetchById(Long id) {
+        LOGGER.debug(String.valueOf(id));
+        String queryName = type.getSimpleName() + ".findById";
+        return this.rxExecuteSingleQuery(
+                () -> {
+                    T result = entityManager
+                            .createNamedQuery(queryName, type)
+                            .setParameter("id", id)
+                            .getSingleResult();
+                    if(result == null){
+                        throw new NoResultException("No " + type.getSimpleName() + " found with id " + id);
+                    }
+                    return result;
+                }
+        );
+    }
+
     private Observable<T> rxExecuteQuery(Supplier<List<T>> query) {
         return vertx
                 // get results from the database
@@ -102,5 +120,16 @@ public abstract class LibraryRepository<T extends LibraryEntity> {
                 })
                 // and put them in superposition
                 .flatMapObservable(Observable::fromIterable);
+    }
+
+    private Maybe<T> rxExecuteSingleQuery(Supplier<T> query){
+        return vertx
+                .rxExecuteBlocking(promise -> {
+                    try {
+                        promise.complete(query.get());
+                    } catch (PersistenceException exception) {
+                        promise.fail(exception);
+                    }
+                });
     }
 }

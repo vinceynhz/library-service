@@ -4,6 +4,7 @@ import app.tandv.services.configuration.EventConfig;
 import app.tandv.services.util.EntityUtils;
 import app.tandv.services.util.StringUtils;
 import app.tandv.services.util.collections.FluentHashSet;
+import app.tandv.services.util.collections.Pair;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import org.slf4j.Logger;
@@ -36,7 +37,7 @@ import java.util.stream.Collectors;
  * perfectly reasonable case in which two books by two different contributors may share the same title. For example:
  * - The Outsider by Stephen King
  * - The Outsider by Richard Wright
- *
+ * <p>
  * In the same sense, and perhaps in more common scenarios, the books are also unique considering their format, for
  * example the paperback and hardback version of the same book should be
  * <p>
@@ -56,6 +57,10 @@ import java.util.stream.Collectors;
         @NamedQuery(
                 name = "BookEntity.findAllById",
                 query = "SELECT DISTINCT b FROM BookEntity b LEFT OUTER JOIN FETCH b.contributors WHERE b.id IN :ids"
+        ),
+        @NamedQuery(
+                name = "BookEntity.findById",
+                query = "SELECT DISTINCT b FROM BookEntity b LEFT OUTER JOIN FETCH b.contributors WHERE b.id = :id"
         )
 })
 public class BookEntity extends LibraryEntity<BookEntity> {
@@ -84,6 +89,7 @@ public class BookEntity extends LibraryEntity<BookEntity> {
                 .contributorForOrdering(rawTitle)
                 .orElseThrow(() -> new IllegalArgumentException("Unable to generate cataloguing string for title [" + rawTitle + "]"));
         BookEntity entity = new BookEntity()
+                .withGeneratedId()
                 .withFormat(format)
                 .withTitle(cleanTitle)
                 .withCataloguing(ordering);
@@ -110,15 +116,18 @@ public class BookEntity extends LibraryEntity<BookEntity> {
     @Enumerated(EnumType.STRING)
     private BookFormat format;
 
-    @ManyToMany(cascade = {
-            CascadeType.PERSIST,
-            CascadeType.MERGE
-    })
-    @JoinTable(name = "book_contributor",
-            joinColumns = @JoinColumn(name = "book_id"),
-            inverseJoinColumns = @JoinColumn(name = "contributor_id")
-    )
-    private Set<ContributorEntity> contributors = new HashSet<>();
+    @OneToMany(mappedBy = "book", cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    private Set<BookContributor> contributors;
+
+//    @ManyToMany(cascade = {
+//            CascadeType.PERSIST,
+//            CascadeType.MERGE
+//    })
+//    @JoinTable(name = "book_contributor",
+//            joinColumns = @JoinColumn(name = "book_id"),
+//            inverseJoinColumns = @JoinColumn(name = "contributor_id")
+//    )
+//    private Set<ContributorEntity> contributors = new HashSet<>();
 
     public String getTitle() {
         return title;
@@ -180,40 +189,48 @@ public class BookEntity extends LibraryEntity<BookEntity> {
         this.language = language;
     }
 
-    public BookEntity withLanguage(String language){
+    public BookEntity withLanguage(String language) {
         this.language = language;
         return this;
     }
 
-    public Set<ContributorEntity> getContributors() {
-        return contributors;
+    public Set<BookContributor> getContributors() {
+        if (this.contributors == null) {
+            this.contributors = new HashSet<>();
+        }
+        return this.contributors;
     }
 
-    public void setContributors(Set<ContributorEntity> contributors) {
-        this.contributors = contributors;
+//    public void setContributors(Set<ContributorEntity> contributors) {
+//        this.contributors = contributors;
+//    }
+
+//    public BookEntity withContributors(Set<ContributorEntity> contributors) {
+//        this.contributors = contributors;
+//        return this;
+//    }
+
+    public void addContributor(Pair<ContributorEntity, ContributorType> contribution) {
+        BookContributor association = new BookContributor()
+                .withBook(this)
+                .withContributor(contribution.getOne())
+                .withType(contribution.getTwo());
+
+        this.getContributors().add(association);
+        contribution.getOne().getContributions().add(association);
     }
 
-    public BookEntity withContributors(Set<ContributorEntity> contributors) {
-        this.contributors = contributors;
-        return this;
-    }
-
-    public void addContributor(ContributorEntity contributor) {
-        this.contributors.add(contributor);
-        contributor.getBooks().add(this);
-    }
-
-    public void removeContributor(ContributorEntity contributor) {
-        contributors.remove(contributor);
-        contributor.getBooks().remove(this);
-    }
-
-    public void clearAuthors() {
-        // We remove the references to this book from all contributors
-        contributors.forEach(contributorEntity -> contributorEntity.getBooks().remove(this));
-        // Then we remove the contributors from this book
-        contributors.clear();
-    }
+//    public void removeContributor(ContributorEntity contributor) {
+//        contributors.remove(contributor);
+//        contributor.getBooks().remove(this);
+//    }
+//
+//    public void clearAuthors() {
+//        // We remove the references to this book from all contributors
+//        contributors.forEach(contributorEntity -> contributorEntity.getBooks().remove(this));
+//        // Then we remove the contributors from this book
+//        contributors.clear();
+//    }
 
     /**
      * This method will take the title (after construction the title is already in proper casing), and the sha256
@@ -227,10 +244,12 @@ public class BookEntity extends LibraryEntity<BookEntity> {
         if (this.getContributors().isEmpty()) {
             throw new IllegalArgumentException("No contributor information to determine book sha256 signature");
         }
-        String authorsSha256 = this.getContributors().stream()
+        String contributorSha256 = this.getContributors()
+                .stream()
+                .map(BookContributor::getContributor)
                 .map(ContributorEntity::getSha256)
                 .collect(Collectors.joining(StringUtils.WORD_SEPARATOR));
-        String bookSha256 = StringUtils.sha256(this.title + StringUtils.WORD_SEPARATOR + authorsSha256)
+        String bookSha256 = StringUtils.sha256(this.title + StringUtils.WORD_SEPARATOR + contributorSha256)
                 .orElseThrow(() -> new IllegalArgumentException("Unable to generate SHA 256 for title [" + this.title + "]"));
         return this.withSha256(bookSha256);
     }
@@ -264,8 +283,8 @@ public class BookEntity extends LibraryEntity<BookEntity> {
 
     @Override
     public JsonObject toJson() {
-        JsonArray contributorIds = contributors.stream()
-                .map(ContributorEntity::getId)
+        JsonArray contributors = this.contributors.stream()
+                .map(BookContributor::toBookJson)
                 .collect(JsonArray::new, JsonArray::add, JsonArray::addAll);
         return new JsonObject()
                 .put(EventConfig.ID, this.id)
@@ -275,6 +294,7 @@ public class BookEntity extends LibraryEntity<BookEntity> {
                 .put(EventConfig.ISBN, this.isbn)
                 .put(EventConfig.YEAR, this.year)
                 .put(EventConfig.FORMAT, this.format.name())
-                .put(EventConfig.CONTRIBUTORS, contributorIds);
+                .put(EventConfig.CONTRIBUTORS, contributors)
+                ;
     }
 }

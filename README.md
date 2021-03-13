@@ -51,4 +51,4 @@ The following requisites are needed:
 
 ## Data Model
 
-See [library data model]()
+See [library data model](https://github.com/vinceynhz/library-service/tree/master/src/main/java/app/tandv/services/data)

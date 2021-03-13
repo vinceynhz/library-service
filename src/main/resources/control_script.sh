@@ -23,7 +23,7 @@ APP_LOG_FILE=${LOG_FOLDER}/${APP_NAME}.out
 APP_ERR_FILE=${LOG_FOLDER}/${APP_NAME}.err
 
 JVM_OPTS="-Xms256M -Xmx1024M -Dlog.dir=${APP_HOME}"
-DATE=$(date +%F\ %T)
+DATE=$(date +%FT%T)
 
 if [ ! -f ${LOG_FILE} ]; then
     touch ${LOG_FILE}
@@ -52,6 +52,7 @@ _clone_repo(){
     _console "Cloning repository"
     pushd_s /tmp/
     git clone ${GIT_REPO_URL} 1>>${LOG_FILE} 2>&1
+    chmod 777 ${INSTALL PATH}
     rc=$?
     popd_s
     return ${rc}
@@ -81,10 +82,9 @@ install(){
     fi
 
     # Build the new jar
-    timestamp=$(date +%Y%m%d_%H%M%S)
     _console "Building library service"
-    python3 ${INSTALL_PATH}/bin/build.py &>"/tmp/library-service-build-${timestamp}.log"
-    _console "Build output saved in /tmp/library-service-build-${timestamp}.log"
+    python3 ${INSTALL_PATH}/bin/build.py >"/tmp/library-service-build-${DATE}.log"
+    _console "Build output saved in /tmp/library-service-build-${DATE}.log"
     if [ $? -ne 0 ]; then
         _console "Build failed"
         return 2
