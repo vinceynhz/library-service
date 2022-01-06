@@ -24,7 +24,7 @@
     <timestamp>${maven.build.timestamp}</timestamp>
 
     <version.awaitility>4.0.3</version.awaitility>
-    <version.h2>1.4.200</version.h2>
+    <version.h2>2.0.206</version.h2>
     <version.hibernate>5.4.0.Final</version.hibernate>
     <version.hikari>3.4.5</version.hikari>
     <version.junit.jupiter>5.6.2</version.junit.jupiter>
