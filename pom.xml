@@ -31,7 +31,7 @@
     <version.junit.platform>1.6.2</version.junit.platform>
     <version.logback>1.2.3</version.logback>
     <version.slf4j>1.7.25</version.slf4j>
-    <version.vertx>3.9.1</version.vertx>
+    <version.vertx>3.9.4</version.vertx>
   </properties>
 
   <dependencies>
